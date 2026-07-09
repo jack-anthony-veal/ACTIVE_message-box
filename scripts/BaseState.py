@@ -8,7 +8,7 @@ class BaseState:
     def exit_state(self):
         ...
 
-    def handle_input_event(self):
+    def handle_input(self):
         ...
 
     def update_each_frame(self):

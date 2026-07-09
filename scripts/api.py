@@ -40,12 +40,13 @@ class MessageApiClient:
             raise Exception(f'failed to lode presets {err}')
 
         response_data = self.get_json(presets_url)
-        preset_list = response_data.get("presets") if response_data is not None else None
+        if response_data is not None:
+            preset_list = response_data.get("presets")
+            return True, list(preset_list)
 
-        if preset_list is None:
-            return False, ["No presets", "Upload on site"]
+        return False, ["No presets", "Upload on site"]
 
-        return True, preset_list
+
 
     def read_new_message(self): # Returns a dict
         read_url = self.server_url + self.read_path + READ_PERSON + "/"

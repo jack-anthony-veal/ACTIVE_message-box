@@ -77,11 +77,12 @@ class ToggleInput:
         if not self.check_time_valid(self.last_trigger_ms_switch, now_ms):  # Allow double use & prevent spam
             return None
 
+        print("pressed switch")
         self.input_armed_switch = False
         self.last_trigger_ms_switch = now_ms
         return input_position
 
-    @property
+
     def switch(self):
         return self.read_event_switch()
 

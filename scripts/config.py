@@ -1,10 +1,10 @@
-from typing import *
+from typing import Tuple, Union
 
 SERVER_URL: str = "https://projectserver.org"
 TOKEN: str = "cwvd7CsVgyy6xxbxupgw" # should change to be more secure
 
-WIFI_SSID: str = "VM6227403"
-WIFI_PASSWORD: str = "9UdkuxiSxweybmpu"
+WIFI_SSID: str = "testnet"
+WIFI_PASSWORD: str = "12345678"
 
 READ_PERSON: str = "ella"
 PRESET_PERSON: str = "jack"
@@ -15,6 +15,8 @@ OLED_HEIGHT: int = 64
 OLED_TEXT_HEIGHT: int = 8
 OLED_CHARS_PER_LINE: int = 16
 OLED_MAX_LINES: int = 6
+
+IF_MESSAGE_NONE_DISP: str = "No new or saved messages!"
 
 I2C_SCL_PIN: int = 22
 I2C_SDA_PIN: int = 21

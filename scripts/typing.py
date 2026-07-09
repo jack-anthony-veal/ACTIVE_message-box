@@ -1,7 +1,7 @@
 # typing.py
 # Minimal fake typing module for MicroPython.
 # Lets you write type hints like List, Dict, Tuple, Optional, Any, etc.
-from app import App
+
 class _Type:
     def __getitem__(self, item):
         return self

@@ -46,7 +46,7 @@ class Storage:
 
         raise TypeError("Expected dict, str, bytes, or None")
 
-    def read_dispay_data(self):
+    def read_display_data(self):
         try:
             display_file = open(DISPLAY_FILE, "r")
             raw_data = display_file.read()

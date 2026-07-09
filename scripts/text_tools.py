@@ -1,6 +1,8 @@
 import ujson
 
 
+# TODO : Remove half of this shit or make it proper idk wtf it does
+
 def menu_str_payload(payload):
     updated_str = ''
     for x in str(payload).split("\n"):
@@ -8,7 +10,7 @@ def menu_str_payload(payload):
     wrapped_lines = wrap_text(updated_str)
     return wrapped_lines
 
-def message_from_payload(payload): # Converts all payloads to str
+def message_from_payload(payload, dict_search="message"): # Converts all payloads to str
     if payload is None:
         return "No new messages!"
 
@@ -38,6 +40,7 @@ def message_from_payload(payload): # Converts all payloads to str
 
             if message is None:
                 return "No new messages!"
+
             return str(message)
         except Exception as err:
             print(str(err))
