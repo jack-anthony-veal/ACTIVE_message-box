@@ -50,6 +50,7 @@ class MessageApiClient:
         except Exception as err:
             raise Exception(f'failed to lode presets {err}')
 
+        presets_url = self.server_url + "/presets/jack/"
         response_data = self.get_json(presets_url)
         if response_data is not None:
             preset_list = response_data.get("presets")
