@@ -62,7 +62,7 @@ class MessageApiClient:
 
 
     def read_new_message(self): # Returns a dict
-        read_url = self.server_url + self.read_path + READ_PERSON + "/"
+        read_url = self.server_url + '/read/ella'
         response_data = self.get_json(read_url)
 
         message_text = response_data.get("message") if response_data is not None else None
