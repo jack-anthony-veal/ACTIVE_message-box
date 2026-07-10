@@ -27,7 +27,7 @@ class MessageApiClient:
 
             except Exception as err:
                 print("JSON parse error:", err)
-                return None
+                data=session.text
 
         except Exception as err:
             print("HTTP error:", err)
