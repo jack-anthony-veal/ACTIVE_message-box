@@ -1,15 +1,14 @@
 from libraries.utils.typing import *
 
-SERVER_URL: str = "http://projectserver.org"
-TOKEN: str = "cwvd7CsVgyy6xxbxupgw" # should change to be more secure
+SERVER_URL = 'RED'
+TOKEN = 'RED'
 
-WIFI_SSID: str = "testnet"
-WIFI_PASSWORD: str = "12345678"
+WIFI_SSID: str = "REDACTED"
+WIFI_PASSWORD: str = "REDACTED"
 
-READ_PERSON: str = "ella"
-PRESET_PERSON: str = "jack"
-
-PRESET_FILE: str = "./database/display.txt"
+READ_PERSON: str = "REDACTED"
+PRESET_PERSON: str = "REDACTED"
+PRESET_FILE: str = "REDACTED.txt"
 
 OLED_WIDTH: int = 128
 OLED_HEIGHT: int = 64
@@ -55,6 +54,6 @@ INPUT_DEBOUNCE_MS: int = 150
 DISPLAY_FILE: str = "./database/display.txt"
 
 # BOOTING
-BOOT_MESSAGE: str = "Hi ella! Booting up now. Love you xx - Jack <3"
+BOOT_MESSAGE: str = "Hi REDACTED! Booting up now. Love you xx - REDACTED <3"
 BOOT_DISPLAY_LAYOUT = {"status": 0, "result": 6}
 JUST_BOOTED: bool = True
