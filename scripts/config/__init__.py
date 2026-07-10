@@ -1,1 +1,1 @@
-from config.config import *
+from scripts.config.config import *

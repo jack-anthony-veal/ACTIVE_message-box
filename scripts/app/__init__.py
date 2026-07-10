@@ -1,7 +1,7 @@
 import sys
 
-from states.PresetMenu import PresetMenu
 from states.MainMenuState import MainMenuCycleState
+from states.PresetMenu import PresetMenu
 
 if "app" not in sys.path:
     sys.path.append("app")
