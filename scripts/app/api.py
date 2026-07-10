@@ -52,6 +52,7 @@ class MessageApiClient:
 
         presets_url = self.server_url + "/presets/jack/"
         response_data = self.get_json(presets_url)
+        
         if response_data is not None:
             preset_list = response_data.get("presets")
             return True, list(preset_list)
