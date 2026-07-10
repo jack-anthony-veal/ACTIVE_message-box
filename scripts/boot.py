@@ -1,9 +1,9 @@
-import network
-import esp
 import gc
+import sys
 import time
 
-import sys
+import esp
+import network
 from machine import Pin
 
 from config.config import WIFI_PASSWORD, WIFI_SSID

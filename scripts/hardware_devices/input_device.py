@@ -1,5 +1,4 @@
 import time
-from machine import Pin
 
 from config.config import (
     INPUT_DEBOUNCE_MS,
@@ -8,6 +7,7 @@ from config.config import (
     RIGHT_PIN_CHECK,
     LEFT_PIN_CHECK
 )
+from machine import Pin
 
 """
 None refers to no input and False / True refer to specific actions

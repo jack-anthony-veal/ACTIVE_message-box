@@ -1,10 +1,8 @@
-from app.app import App
-from app.StateNavigator import StateNavigator
-from states.MainMenuState import MainMenuCycleState
-from states.PresetMenu import PresetMenu
-from config.config import *
-import time
 import os
+import time
+
+from app.app import App
+from states.MainMenuState import MainMenuCycleState
 
 print(os.listdir("./"))
 
@@ -13,9 +11,7 @@ print(os.listdir("./"))
 
 def main():
     app = App() # declare object superclass
-    state_manager = StateNavigator(app) # Inst state nav
-
-
+    state_manager = app.state_manager # Inst state nav
     state_manager.push_state(MainMenuCycleState(app))
 
     while state_manager.current_state_check is None: # Ensure that state manager doesn't call upon empty objects
@@ -33,7 +29,7 @@ def main():
           state_manager.handle_input(event=input_event_button, event_type=input_event_type)
 
 
-        if input_event_switch is not None:
+        elif input_event_switch is not None:
             input_event_type = 'switch'
             state_manager.handle_input(event=input_event_switch, event_type=input_event_type)
 

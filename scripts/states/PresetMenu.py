@@ -42,6 +42,7 @@ class PresetMenu:
         self.app.state_manager.current_state = self # ensure current is self
         self.app.display.custom_message("Loading...", x_axis=0, y_axis=8, fill_all=True, wrap = False)
         new_data, preset_data = self.app.message_api.load_presets()
+
         self.preset_data_full = preset_data
         self.preset_data_select = str(self.preset_data_full[0])
 
@@ -71,7 +72,6 @@ class PresetMenu:
         data_final = str(str_ext) + str(header_data) + str(str_sff)
 
         return data_final  # returns heade
-
 
 
     def preset_body(self):

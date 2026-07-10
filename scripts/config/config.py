@@ -1,7 +1,4 @@
-import sys
-
 from libraries.utils.typing import *
-import os
 
 SERVER_URL: str = "http://projectserver.org"
 TOKEN: str = "cwvd7CsVgyy6xxbxupgw" # should change to be more secure
@@ -11,6 +8,7 @@ WIFI_PASSWORD: str = "12345678"
 
 READ_PERSON: str = "ella"
 PRESET_PERSON: str = "jack"
+
 PRESET_FILE: str = "./database/display.txt"
 
 OLED_WIDTH: int = 128

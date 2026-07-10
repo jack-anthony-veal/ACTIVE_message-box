@@ -5,13 +5,14 @@
 #  TODO: add push and close and other functionality
 
 
-class StateNavigator:
+class StateNavigator():
     def __init__(self, app):
         self.app = app
         self.current_state = None
         self.previous_state = None
         self.second_state_prior = None
         self.next_state = None
+        self.running = False
 
     @property
     def current_state_check(self):
@@ -19,11 +20,11 @@ class StateNavigator:
 
     # ENTER A STATE
     def push_state(self, state):
-        if self.current_state is not None:
+        if self.current_state is not None and self.current_state.running:
             self.current_state.exit_state()
 
-        self.current_state = state # Add object context
-        self.current_state.enter_state() # Enter the state
+        state.enter_state() # Add object context
+        self.current_state = state # Enter the state
 
     # EXIT A STATE and ENTER prior
     def pop_state(self):
@@ -38,7 +39,7 @@ class StateNavigator:
     # TODO: consider using replace for better menu navigation
     def replace_state(self, state): # changes working state without exit
         self.current_state = state
-        state.enter_state(state)
+        state.enter_state()
 
     # calls the state to handle input
     def handle_input(self, event, event_type):

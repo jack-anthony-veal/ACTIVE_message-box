@@ -30,16 +30,14 @@ class MessageApiClient:
             except Exception as err:
                 print("JSON parse error:", err)
                 data=session.text
-                session.close()
 
         except Exception as err:
             print("HTTP error:", err)
-            gc.collect()
-            return
 
         finally:
             if data is not None:
                 session.close()
+            gc.collect()
 
         gc.collect() # free up ram used from tls
         return data
@@ -47,14 +45,10 @@ class MessageApiClient:
 
 # ===================== ADD HANDLER FOR 202 ERROR
     def load_presets(self): # ALWAYS returns a list
-        try:
-            presets_url = self.server_url + "/presets/" + PRESET_PERSON
-        except Exception as err:
-            raise Exception(f'failed to lode presets {err}')
 
         presets_url = self.server_url + "/presets/jack/"
         response_data = self.get_json(presets_url)
-        
+
         if response_data is not None:
             preset_list = response_data.get("presets")
             return True, list(preset_list)

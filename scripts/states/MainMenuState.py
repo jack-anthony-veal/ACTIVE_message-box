@@ -1,13 +1,10 @@
 import math
+import time
+
+import gc
 
 from config.config import MENU_OPTIONS, MENU_OPTS_INDEX, MENU_Y, IF_MESSAGE_NONE_DISP
-import time
 from libraries.utils.typing import *
-
-
-# TODO: configure import
-# TODO: configure type hints
-
 
 # Grabs index
 # Checks if index has just changed and refreshes if so
@@ -19,33 +16,39 @@ from libraries.utils.typing import *
 from .PresetMenu import PresetMenu
 
 
+# TODO: configure import
+# TODO: configure type hints
+
+
 class MainMenuCycleState:
     def __init__(self, app):
         self.app = app
         self.options: list = MENU_OPTIONS # Config CONSTS
 
+        self.running = False
+
         self.current_index: int = 0 # Navigation index
 
-        self.now_ms: Any = time.ticks_ms()
+        self.now_ms = time.ticks_ms()
 
         # 0: msg, 1: preset, 2 none
         # TODO: make parse through the config list
-        self.last_checks: list[Any] = [(MENU_OPTS_INDEX[0][0], time.ticks_ms()),(MENU_OPTIONS[1][0], time.ticks_ms())]
+        self.last_checks = [(MENU_OPTS_INDEX[0][0], time.ticks_ms()),(MENU_OPTIONS[1][0], time.ticks_ms())]
 
         self.index_updated: bool = False # Checks if menu updated so a refresh can occur w/o overloading the disp
-        self.input_event: Union[bool, None, int] = None #
+        self.input_event = None #
         self.to_refresh:bool = False
 
-        self.data_to_draw: Any = None
+        self.data_to_draw = None
 
 
     def enter_state(self) -> None: # Upon entering the state
         # attempts to load messages and display
         self.app.display.power_on()
 
-        data: Any = None
+        data = None
         try:
-            data_list: list = self.message_data()
+            data_list = self.message_data()
             data = data_list[1]
 
         except Exception as api_message_ERR:  # TODO: Add a custom handler
@@ -69,7 +72,8 @@ class MainMenuCycleState:
         self.app.display.custom_message("loading...", x_axis=0, y_axis=8, wrap=False, fill_all=True)
 
         if type_of_event == 'button' and self.current_index == 1:
-            self.app.state_manager.push_state(PresetMenu(self.app))
+            self.app.state_manager.push_state(PresetMenu(self.app)) # push state instance
+            return
 
         self.input_event = input_event # Setting event as an attr of the class
         self.move_selection(self.input_event) # Shift the new index
@@ -135,6 +139,8 @@ class MainMenuCycleState:
 
     def exit_state(self) -> None:
         self.current_index = self.current_index
+        self.running = False
+        gc.collect()
 
         #
     # The functions below are specific to the state

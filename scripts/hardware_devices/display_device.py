@@ -1,7 +1,3 @@
-from machine import Pin, I2C
-
-from libraries import sh1106
-
 from config.config import (
     I2C_SCL_PIN,
     I2C_SDA_PIN,
@@ -12,7 +8,9 @@ from config.config import (
     OLED_TEXT_HEIGHT,
     OLED_WIDTH,
 )
+from libraries import sh1106
 from libraries.utils.text_tools import message_from_payload, wrap_text
+from machine import Pin, I2C
 
 
 class OledDisplay:
@@ -63,11 +61,16 @@ class OledDisplay:
         if 0 not in [fill_start_line, fill_x_axis, fill_y_axis]: # Fill custom rect
             self.oled.fill_rect(0, fill_start_line, fill_x_axis, fill_y_axis, 0)
 
-        if fill_all or data is None: self.oled.fill(0) # Fill whole screen
-        self.oled.show()
-        if data is None: return # Return after fill
+        if fill_all or data is None:
+            self.oled.fill(0) # Fill whole screen
+
+        if data is None:
+            self.oled.show()
+            return # Return after fill
 
         start_line = round(y_axis / 8) if y_axis != 0 else 0
+        start_line = int(round(start_line))
+        y_axis = int(round(y_axis, 0)) # Prevents conversion errors
 
         if not wrap:  # Reduces process time for non-wrap text
             self.oled.text(str(data), x_axis, y_axis, 1)
@@ -91,20 +94,20 @@ class OledDisplay:
             return
 
             # Converts the data to string
-        message_text = message_from_payload(data)
+        message_text = message_from_payload(data) if type(data) != str else data
 
         # Draws
-        self.draw_wrap_text(message_text,start_line=start_line, x_axis=x_axis, color=color)
+        self.draw_wrap_text(message_text,start_line=start_line, x_axis=x_axis, color=1)
         self.oled.show()
+        return
 
     def draw_wrap_text(self, message, return_next_line=False, start_line=0, x_axis=0, color=1):
-
         line_limit = self.max_lines - start_line
         wrapped_lines = wrap_text(message, self.chars_per_line, max_lines=line_limit)
 
         for line_index, line_text in enumerate(wrapped_lines): # Limit height
             if line_index > self.max_lines: break
-            self.oled.text(line_text, x_axis, (start_line+line_index)*8, color)
+            self.oled.text(line_text, x_axis, (start_line+line_index)*8, 1)
 
         if return_next_line:
             return start_line + len(wrapped_lines) # Give next line so wrap can occur
@@ -113,11 +116,8 @@ class OledDisplay:
 
     def clear_message_area(self):
         self.oled.fill_rect(0, 0, self.width, self.menu_y, 0)
+        self.oled.show()
 
     def clear_menu_area(self):
         self.oled.fill_rect(0, self.menu_y, self.width, self.text_height, 0)
-
-    def show_menu(self, menu_text):
-        self.clear_menu_area()
-        self.oled.text(menu_text[:self.chars_per_line], 0, self.menu_y, 1)
         self.oled.show()
