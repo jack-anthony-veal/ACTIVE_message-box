@@ -32,7 +32,9 @@ class MessageApiClient:
 
         except Exception as err:
             print("HTTP error:", err)
-            return None
+            gc.collect()
+            return
+
         finally:
             if response is not None:
                 response.close()
