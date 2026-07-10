@@ -1,7 +1,6 @@
 import urequests as requests
-
-from config.config import PRESET_PERSON, READ_PERSON, SERVER_URL, TOKEN
-
+import gc
+from config.config import SERVER_URL, TOKEN
 
 class MessageApiClient:
     def __init__(self):
