@@ -1,14 +1,14 @@
 from typing import *
 
-SERVER_URL: str = "https://projectserver.org"
-TOKEN: str = "cwvd7CsVgyy6xxbxupgw" # should change to be more secure
+SERVER_URL: str = "REDACTED"
+TOKEN: str = "REDACTED" # should change to be more secure
 
-WIFI_SSID: str = "VM6227403"
-WIFI_PASSWORD: str = "9UdkuxiSxweybmpu"
+WIFI_SSID: str = "REDACTED"
+WIFI_PASSWORD: str = "REDACTED"
 
-READ_PERSON: str = "ella"
-PRESET_PERSON: str = "jack"
-PRESET_FILE: str = "preset.txt"
+READ_PERSON: str = "REDACTED"
+PRESET_PERSON: str = "REDACTED"
+PRESET_FILE: str = "REDACTED.txt"
 
 OLED_WIDTH: int = 128
 OLED_HEIGHT: int = 64
@@ -49,9 +49,9 @@ CHECK_MS_DICT = {"CHECK_MESSAGES_EVERY_MS": 10000,
 LOOP_SLEEP_MS: int = 20
 INPUT_DEBOUNCE_MS: int = 150
 
-DISPLAY_FILE: str = "display.txt"
+DISPLAY_FILE: str = "REDACTED.txt"
 
 # BOOTING
-BOOT_MESSAGE: str = "Hi ella! Booting up now. Love you xx - Jack <3"
+BOOT_MESSAGE: str = "Hi REDACTED! Booting up now. Love you xx - REDACTED <3"
 BOOT_DISPLAY_LAYOUT = {"status": 0, "result": 6}
 JUST_BOOTED: bool = True
