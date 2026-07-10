@@ -16,13 +16,15 @@ class MessageApiClient:
         }
 
     def get_json(self, url): # returns a dict
-        response = None
-        try:
-            response = requests.get(url, headers=self.headers, timeout=10)
-            print(response.status_code)
-            print(response.text)
+        data = None
+
+        try: # Implemented context manager to attempt to prevent timeouts
+            session = requests.get(url, headers=self.headers, timeout=5)
+            print(session.status_code)
+            print(session.text)
             try:
-                return response.json()
+                data = session.json()
+
             except Exception as err:
                 print("JSON parse error:", err)
                 return None
