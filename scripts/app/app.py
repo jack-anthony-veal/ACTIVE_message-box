@@ -1,14 +1,12 @@
-import input_device
-from display_device import *
-from input_device import *
-from storage import *
-from debug import Debug
-from api import *
-from config import *
-from PresetMenu import *
-from MainMenuState import *
-from StateNavigator import *
-
+from hardware_devices.display_device import *
+from hardware_devices.input_device import *
+from hardware_devices.storage import *
+from libraries.utils.debug import Debug
+from app.api import MessageApiClient
+from config.config import *
+from app.StateNavigator import StateNavigator
+from app import PresetMenu
+from app import MainMenuCycleState
 
 d = Debug(debug=True)
 printd = d.DEBUG_PRINTLN
@@ -16,7 +14,7 @@ printd = d.DEBUG_PRINTLN
 # Boot the box
 class App:
     def __init__(self):
-        self.message_api: MessageApiClient = MessageApiClient(server_url=SERVER_URL, api_token=TOKEN)
+        self.message_api: MessageApiClient = MessageApiClient()
         self.display: OledDisplay = OledDisplay()
         self.storage = Storage()
         self.status_codes = {}

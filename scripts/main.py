@@ -1,8 +1,15 @@
-from app import App
-from StateNavigator import StateNavigator
-from MainMenuState import *
-from BaseState import *
-from PresetState import *
+from app.app import App
+from app.StateNavigator import StateNavigator
+from states.MainMenuState import MainMenuCycleState
+from states.PresetMenu import PresetMenu
+from config.config import *
+import time
+import os
+
+print(os.listdir("./"))
+
+# TODO: create files if none on boot
+
 
 def main():
     app = App() # declare object superclass

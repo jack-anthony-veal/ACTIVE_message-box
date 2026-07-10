@@ -1,23 +1,24 @@
 import urequests as requests
 
-from config import PRESET_PERSON, READ_PERSON
+from config.config import PRESET_PERSON, READ_PERSON, SERVER_URL, TOKEN
 
 
 class MessageApiClient:
-    def __init__(self, server_url: str, api_token: str):
+    def __init__(self):
         self.read_path: str = "/read/"
         self.send_path: str = "/send/"
-        self.server_url: str = server_url
-        self.api_token: str = api_token
+        self.server_url: str = SERVER_URL
+        self.api_token: str = TOKEN
         self.headers = {
             "content-type": "application/json",
-            "box-token": self.api_token
+            "box-token": TOKEN,
+            "Connection": "close"
         }
 
     def get_json(self, url): # returns a dict
         response = None
         try:
-            response = requests.get(url, headers=self.headers)
+            response = requests.get(url, headers=self.headers, timeout=10)
             print(response.status_code)
             print(response.text)
             try:
@@ -25,6 +26,7 @@ class MessageApiClient:
             except Exception as err:
                 print("JSON parse error:", err)
                 return None
+
         except Exception as err:
             print("HTTP error:", err)
             return None

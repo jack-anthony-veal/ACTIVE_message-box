@@ -1,9 +1,8 @@
 import math
 
-from PresetMenu import PresetMenu
-from config import MENU_OPTIONS, MENU_OPTS_INDEX, MENU_Y, IF_MESSAGE_NONE_DISP
+from config.config import MENU_OPTIONS, MENU_OPTS_INDEX, MENU_Y, IF_MESSAGE_NONE_DISP
 import time
-from typing import *
+from libraries.utils.typing import *
 
 
 # TODO: configure import
@@ -17,7 +16,7 @@ from typing import *
 # If it can it refreshes
 # Upon a button press, it switches state
 #
-from PresetMenu import PresetMenu
+from .PresetMenu import PresetMenu
 
 
 class MainMenuCycleState:
@@ -31,7 +30,7 @@ class MainMenuCycleState:
 
         # 0: msg, 1: preset, 2 none
         # TODO: make parse through the config list
-        self.last_checks: list[Tuple[int, Any]] = [(MENU_OPTS_INDEX[0][0], time.ticks_ms()),(MENU_OPTIONS[1][0], time.ticks_ms())]
+        self.last_checks: list[Any] = [(MENU_OPTS_INDEX[0][0], time.ticks_ms()),(MENU_OPTIONS[1][0], time.ticks_ms())]
 
         self.index_updated: bool = False # Checks if menu updated so a refresh can occur w/o overloading the disp
         self.input_event: Union[bool, None, int] = None #
@@ -46,7 +45,7 @@ class MainMenuCycleState:
 
         data: Any = None
         try:
-            data_list: list[bool, Any] = self.message_data()
+            data_list: list = self.message_data()
             data = data_list[1]
 
         except Exception as api_message_ERR:  # TODO: Add a custom handler

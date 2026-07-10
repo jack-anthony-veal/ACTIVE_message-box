@@ -1,7 +1,7 @@
 import time
 from machine import Pin
 
-from config import (
+from config.config import (
     INPUT_DEBOUNCE_MS,
     LEFT_PIN,
     RIGHT_PIN,

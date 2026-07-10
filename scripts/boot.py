@@ -2,9 +2,14 @@ import network
 import esp
 import gc
 import time
+
+import sys
 from machine import Pin
-from config import WIFI_PASSWORD, WIFI_SSID, OLED_TEXT_HEIGHT, BOOT_DISPLAY_LAYOUT, BOOT_MESSAGE
-from display_device import OledDisplay as display_device
+
+from config.config import WIFI_PASSWORD, WIFI_SSID
+
+sys.path.append('config')
+
 
 # TODO: clean this up its a mess
 

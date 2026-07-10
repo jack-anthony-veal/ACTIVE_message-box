@@ -5,7 +5,6 @@
 #  TODO: add push and close and other functionality
 
 
-
 class StateNavigator:
     def __init__(self, app):
         self.app = app

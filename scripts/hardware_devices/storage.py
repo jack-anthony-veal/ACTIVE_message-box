@@ -1,6 +1,6 @@
 import ujson
 
-from config import DISPLAY_FILE, PRESET_FILE
+from config.config import DISPLAY_FILE, PRESET_FILE
 
 
 class Storage:

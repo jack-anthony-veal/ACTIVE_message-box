@@ -1,6 +1,9 @@
-from typing import Tuple, Union
+import sys
 
-SERVER_URL: str = "https://projectserver.org"
+from libraries.utils.typing import *
+import os
+
+SERVER_URL: str = "http://projectserver.org"
 TOKEN: str = "cwvd7CsVgyy6xxbxupgw" # should change to be more secure
 
 WIFI_SSID: str = "testnet"
@@ -8,7 +11,7 @@ WIFI_PASSWORD: str = "12345678"
 
 READ_PERSON: str = "ella"
 PRESET_PERSON: str = "jack"
-PRESET_FILE: str = "preset.txt"
+PRESET_FILE: str = "./database/display.txt"
 
 OLED_WIDTH: int = 128
 OLED_HEIGHT: int = 64
@@ -34,7 +37,7 @@ CHECK_MESSAGES_EVERY_MS: int = 10000
 CHECK_PRESETS_EVERY_MS: int = 10000
 
 MENU_OPTIONS: list = ["Messages", "Presets", "Settings"]
-MENU_OPTS_INDEX: list[Tuple[int, str, Union[int, None]]] = [
+MENU_OPTS_INDEX: list[Any] = [
     (0, MENU_OPTIONS[0], CHECK_MESSAGES_EVERY_MS ),
     (1, MENU_OPTIONS[1], CHECK_PRESETS_EVERY_MS ),
     (2, MENU_OPTIONS[2], None)
@@ -51,7 +54,7 @@ CHECK_MS_DICT = {"CHECK_MESSAGES_EVERY_MS": 10000,
 LOOP_SLEEP_MS: int = 20
 INPUT_DEBOUNCE_MS: int = 150
 
-DISPLAY_FILE: str = "display.txt"
+DISPLAY_FILE: str = "./database/display.txt"
 
 # BOOTING
 BOOT_MESSAGE: str = "Hi ella! Booting up now. Love you xx - Jack <3"

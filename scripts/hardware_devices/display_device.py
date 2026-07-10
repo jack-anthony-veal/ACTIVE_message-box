@@ -1,8 +1,8 @@
 from machine import Pin, I2C
 
-import sh1106
+from libraries import sh1106
 
-from config import (
+from config.config import (
     I2C_SCL_PIN,
     I2C_SDA_PIN,
     MENU_Y,
@@ -12,7 +12,7 @@ from config import (
     OLED_TEXT_HEIGHT,
     OLED_WIDTH,
 )
-from text_tools import message_from_payload, wrap_text
+from libraries.utils.text_tools import message_from_payload, wrap_text
 
 
 class OledDisplay:
