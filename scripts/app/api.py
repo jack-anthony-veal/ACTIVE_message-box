@@ -2,6 +2,9 @@ import urequests as requests
 import gc
 from config.config import SERVER_URL, TOKEN
 
+# TODO: add consts, update the server and allow for a better con management
+
+
 class MessageApiClient:
     def __init__(self):
         self.read_path: str = "/read/"
