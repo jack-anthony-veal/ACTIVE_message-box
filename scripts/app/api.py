@@ -36,8 +36,12 @@ class MessageApiClient:
             return
 
         finally:
-            if response is not None:
-                response.close()
+            if data is not None:
+                session.close()
+
+        gc.collect() # free up ram used from tls
+        return data
+
 
 # ===================== ADD HANDLER FOR 202 ERROR
     def load_presets(self): # ALWAYS returns a list
