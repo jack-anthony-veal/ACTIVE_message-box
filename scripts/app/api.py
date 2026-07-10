@@ -17,7 +17,7 @@ class MessageApiClient:
 
     def get_json(self, url): # returns a dict
         data = None
-
+        session = None
         try: # Implemented context manager to attempt to prevent timeouts
             session = requests.get(url, headers=self.headers, timeout=5)
             print(session.status_code)
