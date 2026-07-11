@@ -56,7 +56,7 @@ class StateNavigator():
         return current
 
     def reset(self):
-        self.current_state.exit()
+        self.current_state.exit_state()
         self.current_state = MainMenuCycleState(self.app)
         self.current_state.enter_state()
 
