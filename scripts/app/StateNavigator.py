@@ -1,5 +1,6 @@
 # === State Navigator ===
 # Responsible for calling and effecting other states where all states inherit a specific instance of App()
+from states.MainMenuState import MainMenuCycleState
 # TODO: add a boot state and a loading state
 # TODO: add a context manager here or for an app
 #  TODO: add push and close and other functionality
@@ -90,3 +91,4 @@ class StateNavigator():
         current = self.current_state()
         if current is not None:
             current.exit()
+
