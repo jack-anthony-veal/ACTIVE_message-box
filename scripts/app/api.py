@@ -21,24 +21,19 @@ class MessageApiClient:
     def get_json(self, url): # returns a dict
         data = None
         session = None
-        try: # Implemented context manager to attempt to prevent timeouts
-            session = requests.get(url, headers=self.headers, timeout=5)
-            print(session.status_code)
-            print(session.text)
-            try:
-                data = session.json()
-
-            except Exception as err:
-                print("JSON parse error:", err)
-                data=session.text
+        # Implemented context manager to attempt to prevent timeouts
+        session = requests.get(url, headers=self.headers, timeout=5)
+        print(session.status_code)
+        print(session.text)
+        try:
+            data = session.json()
 
         except Exception as err:
-            print("HTTP error:", err)
+            print("JSON parse error:", err)
+            data=session.text
 
-        finally:
-            if data is not None:
-                session.close()
-            gc.collect()
+        if data is not None:
+            session.close()
 
         gc.collect() # free up ram used from tls
         return data
@@ -48,10 +43,21 @@ class MessageApiClient:
     def load_presets(self): # ALWAYS returns a list
 
         presets_url = self.server_url + "/presets/jack/"
-        response_data = self.get_json(presets_url)
+
+        try:
+            response_data = self.get_json(presets_url)
+
+        except Exception as err:
+            raise Exception(err)
 
         if response_data is not None:
-            preset_list = response_data.get("presets")
+            try:
+                preset_list = response_data.get("presets")
+
+            except Exception as err:
+                raise Exception(err)
+
+
             return True, list(preset_list)
 
         return False, ["No presets", "Upload on site"]
@@ -60,7 +66,10 @@ class MessageApiClient:
 
     def read_new_message(self): # Returns a dict
         read_url = self.server_url + '/read/ella'
-        response_data = self.get_json(read_url)
+        try:
+            response_data = self.get_json(read_url)
+        except Exception as err:
+            raise Exception(err)
 
         message_text = response_data.get("message") if response_data is not None else None
 
@@ -83,7 +92,7 @@ class MessageApiClient:
                 session.close()
                 return True, None
         except Exception as err:
-            return False, [session.status_code, err]
+            raise Exception(err)
 
         finally:
             if session is not None: session.close()

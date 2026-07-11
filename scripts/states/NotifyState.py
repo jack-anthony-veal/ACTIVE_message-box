@@ -61,12 +61,30 @@ class Notify:
 
 
 
-class HTTPError:
-    def __init__(self, app, data):
+class ErrorState:
+    def __init__(self, app, data, error_code=0):
         self.app = app
         self.data = data
-        self.screen = CUTE_API_ERROR_BOX
+        self.screen_http = CUTE_API_ERROR_BOX
+        self.screen_minor = CUTE_ERROR_BOX
+        self.screen_wifi = CUTE_WIFI_ERROR_BOX
         self.displayed = False
+        self.screen = self.screen_minor
+
+        self.error_codes = {
+            0: "unknown",
+            10: "HTTP",
+            11: "HTTP POST",
+            12: "HTTP GET",
+            13: "HTTP Json Invalid",
+            20: "DEVICE ERR",
+            21: "Display Error",
+            22: "Read Storage Error",
+            23: "Write Storage Error",
+            24: "Input Error",
+            30: "Software Error",
+            31: "Math Error",
+        }
 
     def enter_state(self):
         self.draw()
