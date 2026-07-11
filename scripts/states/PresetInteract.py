@@ -14,16 +14,16 @@ class PresetInteract:
         self.draw()
 
     def update(self):
-        ...
+        return
 
     def handle_input(self, event, _type):
         if _type == 'button' and event is not None:
             if self.current_index == 0:
-                from states.PresetMenu import PresetMenu
-                self.app.state_manager.replace_state(PresetMenu(self.app, self.preset_data))
+                self.app.state_manager.pop_state()
 
             elif self.current_index == 1:
                 self.app.state_manager.replace_state(SendingState(self.app, self.send_data))
+
 
         if _type == 'dial' and event is not None:
             self.current_index = (self.current_index + event) % len(self.options)
@@ -59,7 +59,7 @@ class PresetInteract:
 
 
     def exit_state(self):
-        self.app.state_manager.pop()
+        return
 
 
 class SendingState:
@@ -82,11 +82,9 @@ class SendingState:
         else:
             self.app.state_manager.replace_state(HTTPError(self.app, str(data)))
 
-        self.app.state_manager.reset()
-
 
     def update(self):
-        pass
+        return
 
     def exit_state(self):
-        self.app.state_manager.pop()
+        return

@@ -1,4 +1,3 @@
-
 from states.PresetInteract import PresetInteract
 
 
@@ -11,7 +10,7 @@ class PresetMenu:
         self.needs_draw = True
 
     def exit_state(self):
-        self.app.state_manager.pop_state()
+        pass
 
     def draw(self):
         if not self.needs_draw:
@@ -28,7 +27,7 @@ class PresetMenu:
             return
 
         if event_type == 'button':
-            self.app.state_manager.replace_state(PresetInteract(self.app,
+            self.app.state_manager.push_state(PresetInteract(self.app,
             preset_data=self.preset_data_full, current_index= self.current_index_preset))
 
         if event_type in ('dial', 'switch'):
@@ -48,7 +47,6 @@ class PresetMenu:
         preview_length = 16 - len(prefix) - len(suffix)
         preview = self.preset_data_select[:preview_length] if preview_length > 0 else ''
         return prefix + preview + suffix
-
 
 
 

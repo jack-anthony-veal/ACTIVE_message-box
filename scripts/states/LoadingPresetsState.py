@@ -10,7 +10,7 @@ class LoadingPresetsState:
         self.draw()
 
     def exit_state(self):
-        return
+        pass
 
     def handle_input(self, event, event_type=None):
         return
@@ -51,7 +51,7 @@ class ErrorState:
         self.draw()
 
     def exit_state(self):
-        return
+        pass
 
     def handle_input(self, event, event_type=None):
         return

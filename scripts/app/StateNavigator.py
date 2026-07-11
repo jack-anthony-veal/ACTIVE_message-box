@@ -1,6 +1,5 @@
 # === State Navigator ===
 # Responsible for calling and effecting other states where all states inherit a specific instance of App()
-from states.MainMenuState import MainMenuCycleState
 # TODO: add a boot state and a loading state
 # TODO: add a context manager here or for an app
 #  TODO: add push and close and other functionality
@@ -14,6 +13,7 @@ class StateNavigator():
         self.second_state_prior = None
         self.next_state = None
         self.running = False
+        self.start_state = None
 
     def __setattr__(self, name, value):
         if name == "current_state":
@@ -36,12 +36,17 @@ class StateNavigator():
         if current is not None:
             current.exit_state()
         self._state_stack = []
+        self.start_state = state
         self.push_state(state)
+
 
     # ENTER A STATE
     def push_state(self, state):
+        current = self.current_state()
+        if current is not None:
+            current.exit_state()
         self._state_stack.append(state)
-        state.enter_state() # Add object context
+        state.enter_state()
 
     # EXIT A STATE and ENTER prior
     def pop_state(self):
@@ -56,9 +61,9 @@ class StateNavigator():
         return current
 
     def reset(self):
-        self.current_state.exit_state()
-        self.current_state = MainMenuCycleState(self.app)
-        self.current_state.enter_state()
+        state = self.start_state.__class__(self.app)
+        self.start(state)
+
 
 
     # EXIT A STATE and ENTER prior
@@ -68,6 +73,7 @@ class StateNavigator():
         if current is not None:
             current.exit_state()
             self._state_stack.pop()
+
         self._state_stack.append(state)
         state.enter_state()
 
@@ -87,5 +93,6 @@ class StateNavigator():
         if current is not None:
             current.draw()
 
-
+    def exit_state(self):
+        pass
 

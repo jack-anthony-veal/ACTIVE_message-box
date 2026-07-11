@@ -5,7 +5,7 @@ from hardware_devices.display_device import *
 from hardware_devices.input_device import *
 from hardware_devices.storage import *
 from libraries.utils.debug import Debug
-
+from states.LoadingMainMenuState import LoadingMainMenuState
 
 
 d = Debug(debug=True)
@@ -21,3 +21,4 @@ class App:
         self.dial = Dial()
         self.button = Button()
         self.state_manager = StateNavigator(self)
+        self.reset_state = LoadingMainMenuState(self)

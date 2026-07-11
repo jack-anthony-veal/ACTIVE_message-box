@@ -35,6 +35,8 @@ class LoadingMainMenuState:
         if message is None:
             message = IF_MESSAGE_NONE_DISP
 
+        self.draw()
+
         self.app.state_manager.replace_state(MainMenuCycleState(self.app, message))
 
     def draw(self):
