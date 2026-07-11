@@ -1,15 +1,14 @@
 import math
-
-from states import PresetMenu
-
+from states.NotifyState import HTTPError, Notify
 
 class PresetInteract:
-    def __init__(self, app, preset_data):
+    def __init__(self, app, preset_data, current_index):
         self.app = app
         self.current_index = 0
         self.options = ["BACK", "SEND"]
-        self.index_changed = False
-        self.send_data = preset_data
+        self.index_changed = True
+        self.preset_data = preset_data
+        self.send_data = preset_data[current_index]
 
     def enter_state(self):
         self.draw()
@@ -20,17 +19,11 @@ class PresetInteract:
     def handle_input(self, event, _type):
         if _type == 'button' and event is not None:
             if self.current_index == 0:
-                self.app.state_manager.replace_state(PresetMenu(self.app, preset_data=None))
+                from states.PresetMenu import PresetMenu
+                self.app.state_manager.replace_state(PresetMenu(self.app, self.preset_data))
 
             elif self.current_index == 1:
-                try:
-                    self.app.message_api.send_message(self.send_data)
-
-                except Exception as HTTPErr:
-                    self.app.state_manager.replace_state('error_state')
-
-                self.app.state_manager.replace_state('hi')
-                self.app.state_manager.reset()
+                self.app.state_manager.replace_state(SendingState(self.app, self.send_data))
 
         if _type == 'dial' and event is not None:
             self.current_index = (self.current_index + event) % len(self.options)
@@ -38,38 +31,62 @@ class PresetInteract:
 
     def draw(self):
         if not self.index_changed: return
-        display_message = []
+
+        final = ''
         x_axis = 0
+        print(final)
         for index, option in enumerate(self.options):
             if index == self.current_index:
-                display_message.append(' > ' + option.upper())
+                final = final + ' > ' + option.upper()
                 x_axis += len(' > ' + option.upper())
             else:
-                display_message.append(option.lower())
+                final = final + '   ' +  option.lower()
                 x_axis += len(option.lower())
 
-        centre = 128 / 2
-        x_axis = centre - math.floor((x_axis / 2))
-        x_axis = math.floor(x_axis)
 
-        self.app.display.custom_message(display_message, wrap=False,
-                                        fill_start_line=56, fill_x_axis=128, fill_y_axis=8,
-                                        y_axis=8, x_axis=x_axis
-                                        )
-        self.index_changed = False
+            centre = 128 / 2
+            x_axis = centre - math.floor((x_axis / 2))
+            x_axis = math.floor(x_axis)
+
+
+            self.index_changed = False
+
+
+            self.app.display.custom_message(final, wrap=False, fill_all=False,
+                                            fill_start_line=56, fill_x_axis=128, fill_y_axis=8,
+                                            y_axis=56, x_axis=0
+                                            )
+
 
     def exit_state(self):
-        self.app.display.custom_message()
+        ...
+
 
 class SendingState:
     def __init__(self, app, data):
         self.app = app
         self.data = data
-        self.state_screen = ''
+        self.state_screen = 'Sending... :00000'
 
     def enter_state(self):
-        try:
-            self.app.message_api.send_message(self.data)
+        self.draw()
 
-        except Exception as HTTPErr:
-            self.app.state_manager.replace_state()
+    def draw(self):
+        self.app.display.custom_message()
+        self.app.display.custom_message(self.state_screen, fill_all=True, x_axis=0, y_axis=0, wrap=True)
+
+        success, data = self.app.message_api.send_preset(self.data)
+
+        if success:
+            self.app.state_manager.replace_state(Notify(self.app, title="Success!", data="presets successfully sent."))
+        else:
+            self.app.state_manager.replace_state(HTTPError(self.app, str(data)))
+
+        self.app.state_manager.reset()
+
+
+    def update(self):
+        ...
+
+    def exit_state(self):
+        ...
