@@ -54,6 +54,11 @@ class StateNavigator():
             current.enter_state()
         return current
 
+    def reset(self):
+        self.current_state.exit()
+        self.current_state = MainMenuCycleState(self.app)
+        self.current_state.enter_state()
+
 
     # EXIT A STATE and ENTER prior
     # TODO: consider using replace for better menu navigation
