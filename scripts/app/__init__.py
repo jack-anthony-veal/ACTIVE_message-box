@@ -1,5 +1,4 @@
 import sys
-
 from states.MainMenuState import MainMenuCycleState
 from states.PresetMenu import PresetMenu
 

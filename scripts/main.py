@@ -1,8 +1,9 @@
 import os
 import time
-
+from hardware_devices.input_device import *
 from app.app import App
-from states.MainMenuState import MainMenuCycleState
+from hardware_devices.input_device import Dial
+from states.LoadingMainMenuState import LoadingMainMenuState
 
 print(os.listdir("./"))
 
@@ -12,26 +13,26 @@ print(os.listdir("./"))
 def main():
     app = App() # declare object superclass
     state_manager = app.state_manager # Inst state nav
-    state_manager.push_state(MainMenuCycleState(app))
+    state_manager.start(LoadingMainMenuState(app))
+
 
     while state_manager.current_state_check is None: # Ensure that state manager doesn't call upon empty objects
         time.sleep_ms(10)
 
     input_event_switch = None
 
+    button = app.button  # Input
+    dial = app.dial
     while True: # TODO: configuren a button device read
-        input_event_type = ''
-        input_event_button = app.input_device.button() # Input
-        input_event_switch = app.input_device.switch() # Input
+    # Input
 
-        if input_event_button is not None:
-          input_event_type = 'button'
-          state_manager.handle_input(event=input_event_button, event_type=input_event_type)
+        button_event = button.event()
+        if button_event is not None:
+            state_manager.handle_input(event=button_event, event_type=button.event_type)
 
-
-        elif input_event_switch is not None:
-            input_event_type = 'switch'
-            state_manager.handle_input(event=input_event_switch, event_type=input_event_type)
+        dial_event = dial.event()
+        if dial_event is not None:
+            state_manager.handle_input(event=dial_event, event_type=dial.event_type)
 
         time.sleep_ms(30)
         state_manager.update()

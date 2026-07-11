@@ -1,14 +1,14 @@
 from libraries.utils.typing import *
 
-SERVER_URL = 'RED'
-TOKEN = 'RED'
+SERVER_URL = 'http://projectserver.org'
+TOKEN = 'cwvd7CsVgyy6xxbxupgw'
 
-WIFI_SSID: str = "REDACTED"
-WIFI_PASSWORD: str = "REDACTED"
+WIFI_SSID: str = "testnet"
+WIFI_PASSWORD: str = "12345678"
 
-READ_PERSON: str = "REDACTED"
-PRESET_PERSON: str = "REDACTED"
-PRESET_FILE: str = "REDACTED.txt"
+READ_PERSON: str = "ella"
+PRESET_PERSON: str = "jack"
+PRESET_FILE: str = "./database/preset.txt"
 
 OLED_WIDTH: int = 128
 OLED_HEIGHT: int = 64

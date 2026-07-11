@@ -6,8 +6,7 @@ from hardware_devices.input_device import *
 from hardware_devices.storage import *
 from libraries.utils.debug import Debug
 
-from app import MainMenuCycleState
-from app import PresetMenu
+
 
 d = Debug(debug=True)
 printd = d.DEBUG_PRINTLN
@@ -19,5 +18,6 @@ class App:
         self.display: OledDisplay = OledDisplay()
         self.storage = Storage()
         self.status_codes = {}
-        self.input_device = ToggleInput()
+        self.dial = Dial()
+        self.button = Button()
         self.state_manager = StateNavigator(self)
