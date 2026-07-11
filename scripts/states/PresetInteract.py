@@ -59,7 +59,7 @@ class PresetInteract:
 
 
     def exit_state(self):
-        ...
+        self.app.state_manager.pop()
 
 
 class SendingState:
@@ -86,7 +86,7 @@ class SendingState:
 
 
     def update(self):
-        ...
+        pass
 
     def exit_state(self):
-        ...
+        self.app.state_manager.pop()
