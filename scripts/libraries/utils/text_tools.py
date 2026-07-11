@@ -14,6 +14,9 @@ def message_from_payload(payload, dict_search="message"): # Converts all payload
     if payload is None:
         return "No new messages!"
 
+    if type(payload) == list:
+        payload = "".join(str(i) for i in payload)
+
     if type(payload) in (int, bool, float):
         message = str(payload)
         return message
