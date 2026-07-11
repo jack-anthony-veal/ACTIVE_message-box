@@ -1,5 +1,6 @@
 from config.config import IF_MESSAGE_NONE_DISP
 from states.MainMenuState import MainMenuCycleState
+from states.NotifyState import ErrorState
 
 
 class LoadingMainMenuState:
@@ -27,10 +28,19 @@ class LoadingMainMenuState:
             if has_new_message:
                 self.app.storage.write_display_data(message)
             else:
-                message = self.app.storage.read_display_data().get("message")
+                try:
+                    message = self.app.storage.read_display_data().get("message")
+
+                except Exception as storage_error:
+                    self.app.state_manager.replace_state(state=ErrorState(self.app, str(storage_error), 22))
+
         except Exception as error:
             print("Message loading error:", error)
-            message = self.app.storage.read_display_data().get("message")
+            try:
+                message = self.app.storage.read_display_data().get("message")
+
+            except Exception as storage_error:
+                self.app.state_manager.replace_state(state=ErrorState(self.app, str(storage_error), 22))
 
         if message is None:
             message = IF_MESSAGE_NONE_DISP

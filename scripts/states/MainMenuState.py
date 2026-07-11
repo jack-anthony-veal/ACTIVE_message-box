@@ -1,6 +1,7 @@
 import math
 
 from config.config import MENU_OPTIONS, MENU_Y
+from states.NotifyState import ErrorState
 from states.LoadingPresetsState import LoadingPresetsState
 
 
@@ -28,7 +29,6 @@ class MainMenuCycleState:
     def handle_input(self, event, event_type=None):
         if event is None:
             return
-
         if event_type == 'button':
             if self.current_index == 1:
                 self.app.state_manager.push_state(LoadingPresetsState(self.app))
@@ -55,11 +55,20 @@ class MainMenuCycleState:
         self.index_updated = False
 
     def show_menu_bar(self):
-        x_axis = (len(self.options[self.current_index] + ' > ') + 1) * 8
-        centre = 128 / 2
-        x_axis = centre - math.floor((x_axis / 2))
-        x_axis = math.floor(x_axis)
-        self.app.display.custom_message(
+        error_occured = False
+        try:
+            x_axis = (len(self.options[self.current_index] + ' > ') + 1) * 8
+            centre = 128 / 2
+            x_axis = centre - math.floor((x_axis / 2))
+            x_axis = math.floor(x_axis)
+
+        except Exception as IndexMathERR:
+            x_axis = 0
+            print(IndexMathERR)
+            error_occured = True
+
+        try:
+            self.app.display.custom_message(
             ' > ' + self.options[self.current_index],
             x_axis=x_axis,
             y_axis=MENU_Y,
@@ -67,7 +76,12 @@ class MainMenuCycleState:
             fill_x_axis=128,
             fill_y_axis=8,
             wrap=False,
-        )
+            )
+        except Exception as DisplayErr:
+            if error_occured:
+                self.app.state_manager.replace_state(state=ErrorState(self.app, str(str(DisplayErr) + str(IndexMathERR)), 31))
+            else:
+                return
 
     def move_selection(self, direction):
         self.current_index = (self.current_index + direction) % len(self.options)
