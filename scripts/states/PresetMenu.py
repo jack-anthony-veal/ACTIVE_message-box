@@ -11,7 +11,7 @@ class PresetMenu:
         self.needs_draw = True
 
     def exit_state(self):
-        return
+        self.app.state_navigator.pop()
 
     def draw(self):
         if not self.needs_draw:
