@@ -1,3 +1,4 @@
+import ujson
 import urequests as requests
 import gc
 from config.config import SERVER_URL, TOKEN
@@ -69,5 +70,21 @@ class MessageApiClient:
 
         return False, {"message": None}
 
-    def send_preset(self, preset_index):
-        ...
+    def send_preset(self, preset_data):
+        session=None
+        url = SERVER_URL + '/send/ella'
+        try: # Implemented context manager to attempt to prevent timeouts
+            body = {
+                "text": preset_data
+            }
+            session = requests.post(url, headers=self.headers,data=ujson.dumps(body), timeout=30)
+            print(session.status_code)
+            if session.status_code == 200:
+                session.close()
+                return True, None
+        except Exception as err:
+            return False, [session.status_code, err]
+
+        finally:
+            if session is not None: session.close()
+

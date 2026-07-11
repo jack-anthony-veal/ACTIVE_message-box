@@ -1,7 +1,7 @@
 import math
 
 from config.config import MENU_OPTIONS, MENU_Y
-from .LoadingPresetsState import LoadingPresetsState
+from states.LoadingPresetsState import LoadingPresetsState
 
 
 class MainMenuCycleState:

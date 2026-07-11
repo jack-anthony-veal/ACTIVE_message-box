@@ -1,5 +1,5 @@
 from config.config import IF_MESSAGE_NONE_DISP
-from .MainMenuState import MainMenuCycleState
+from states.MainMenuState import MainMenuCycleState
 
 
 class LoadingMainMenuState:

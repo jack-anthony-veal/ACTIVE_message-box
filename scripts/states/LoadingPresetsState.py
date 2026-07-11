@@ -1,4 +1,4 @@
-from .PresetMenu import PresetMenu
+from states.PresetMenu import PresetMenu
 
 
 class LoadingPresetsState:

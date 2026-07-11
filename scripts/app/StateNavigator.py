@@ -87,8 +87,5 @@ class StateNavigator():
         if current is not None:
             current.draw()
 
-    def exit(self):
-        current = self.current_state()
-        if current is not None:
-            current.exit()
+
 
