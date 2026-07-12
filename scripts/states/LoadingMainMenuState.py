@@ -18,6 +18,9 @@ class LoadingMainMenuState:
         return
 
     def update(self):
+        if self.app.state_manager.current_state() is not self:
+            return
+
         if self.started:
             return
 
@@ -33,19 +36,16 @@ class LoadingMainMenuState:
 
                 except Exception as storage_error:
                     self.app.state_manager.replace_state(state=ErrorState(self.app, str(storage_error), 22))
+                    return
 
         except Exception as error:
             print("Message loading error:", error)
-            try:
-                message = self.app.storage.read_display_data().get("message")
-
-            except Exception as storage_error:
-                self.app.state_manager.replace_state(state=ErrorState(self.app, str(storage_error), 22))
+            self.app.state_manager.replace_state(state=ErrorState(self.app, str(error), 12))
+            return
 
         if message is None:
             message = IF_MESSAGE_NONE_DISP
 
-        self.draw()
 
         self.app.state_manager.replace_state(MainMenuCycleState(self.app, message))
 

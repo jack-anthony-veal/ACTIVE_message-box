@@ -5,7 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/scripts" type="micropython-source" />
       <excludeFolder url="file://$MODULE_DIR$/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/BOX-State-Update/.venv" />
-      <excludeFolder url="file://$MODULE_DIR$/scripts/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/.venv" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.13 (message-box)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

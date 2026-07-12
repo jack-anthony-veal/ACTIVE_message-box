@@ -55,7 +55,6 @@ class MainMenuCycleState:
         self.index_updated = False
 
     def show_menu_bar(self):
-        error_occured = False
         try:
             x_axis = (len(self.options[self.current_index] + ' > ') + 1) * 8
             centre = 128 / 2
@@ -65,7 +64,8 @@ class MainMenuCycleState:
         except Exception as IndexMathERR:
             x_axis = 0
             print(IndexMathERR)
-            error_occured = True
+            self.app.state_manager.replace_state(state=ErrorState(self.app, str(str(IndexMathERR)), 31))
+
 
         try:
             self.app.display.custom_message(
@@ -78,10 +78,8 @@ class MainMenuCycleState:
             wrap=False,
             )
         except Exception as DisplayErr:
-            if error_occured:
-                self.app.state_manager.replace_state(state=ErrorState(self.app, str(str(DisplayErr) + str(IndexMathERR)), 31))
-            else:
-                return
+            self.app.state_manager.replace_state(state=ErrorState(self.app, str(str(DisplayErr)), 21))
+
 
     def move_selection(self, direction):
         self.current_index = (self.current_index + direction) % len(self.options)

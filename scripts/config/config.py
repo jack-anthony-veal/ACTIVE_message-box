@@ -1,7 +1,7 @@
 from libraries.utils.typing import *
 
-SERVER_URL = redacted
-TOKEN = 'redacted'
+SERVER_URL = "http://projectserver.org"
+TOKEN = 'cwvd7CsVgyy6xxbxupgw'
 
 WIFI_SSID: str = "testnet"
 WIFI_PASSWORD: str = "12345678"

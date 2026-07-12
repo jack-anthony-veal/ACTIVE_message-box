@@ -41,7 +41,7 @@ class StateNavigator():
 
 
     # ENTER A STATE
-    def push_state(self, state):
+    def push_state(self, state: object):
         current = self.current_state()
         if current is not None:
             current.exit_state()
@@ -53,6 +53,8 @@ class StateNavigator():
         current = self.current_state()
         if current is None:
             return None
+        if len(self._state_stack) <= 1:
+            return current
         current.exit_state()
         self._state_stack.pop()
         current = self.current_state()
@@ -95,4 +97,3 @@ class StateNavigator():
 
     def exit_state(self):
         pass
-

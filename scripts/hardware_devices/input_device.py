@@ -29,7 +29,8 @@ class Dial:
         # Initialize with the current encoder value to track changes from this point
         self.last_processed_encoder_value = self.rotary_encoder.value()
         # minimum_turn is not directly used in the new logic, consider removing if not needed elsewhere
-        self.minimum_turn = 10
+        self.minimum_turn = 6
+        self.maximum_turn=100
 
     @property
     def event_type(self):
@@ -47,17 +48,26 @@ class Dial:
             return None  # No change in encoder value
 
         # Check debounce time
-        if time.ticks_diff(_now, self.last_event_ms) < 1000:
+        if time.ticks_diff(_now, self.last_event_ms) < 275:
             return None  # Not enough time has passed since the last event
+
 
         # If we reach here, it's a valid event
         self.last_event_ms = _now
         self.last_processed_encoder_value = current_encoder_value  # Update last processed value
 
         # Determine direction
+        if difference > 500:
+            difference -= 1001
+        elif difference < -500:
+            difference += 1001
+
         direction = 1 if difference > 0 else -1
-        if difference > self.minimum_turn or difference < -self.minimum_turn: return None
-        print(str(direction))
+        if abs(difference) > self.maximum_turn:
+            return None
+        if abs(difference) < self.minimum_turn:
+            return None
+
         return direction
 
 

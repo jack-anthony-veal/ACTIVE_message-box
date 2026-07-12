@@ -32,8 +32,10 @@ class MessageApiClient:
             print("JSON parse error:", err)
             data=session.text
 
-        if data is not None:
+        try:
             session.close()
+        except Exception as err:
+            print("socket couldnt close")
 
         gc.collect() # free up ram used from tls
         return data
@@ -41,16 +43,22 @@ class MessageApiClient:
 
 # ===================== ADD HANDLER FOR 202 ERROR
     def load_presets(self): # ALWAYS returns a list
-
+        response_code = None
         presets_url = self.server_url + "/presets/jack/"
-
         try:
             response_data = self.get_json(presets_url)
 
         except Exception as err:
             raise Exception(err)
 
-        if response_data is not None:
+        if type(response_data) is not dict:
+            try:
+                return False, list(str(response_data))
+            except:
+                return False, 'Error opening api data'
+
+
+        if response_data is not None and type(response_data) is dict:
             try:
                 preset_list = response_data.get("presets")
 
@@ -60,7 +68,8 @@ class MessageApiClient:
 
             return True, list(preset_list)
 
-        return False, ["No presets", "Upload on site"]
+        else:
+            return False, ["No presets", "Upload on site"]
 
 
 
@@ -88,11 +97,17 @@ class MessageApiClient:
             }
             session = requests.post(url, headers=self.headers,data=ujson.dumps(body), timeout=30)
             print(session.status_code)
+
             if session.status_code == 200:
                 session.close()
                 return True, None
+
+            else:
+                return False, "HTTP Error" + str(session.status_code)
+
         except Exception as err:
-            raise Exception(err)
+            print(str(err))
+            return False, "Data rejected"
 
         finally:
             if session is not None: session.close()
