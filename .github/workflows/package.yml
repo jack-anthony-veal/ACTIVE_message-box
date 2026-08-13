@@ -1,0 +1,67 @@
+project:
+  name: message-box
+  version: "1.0.0"
+  type: embedded_iot
+
+hardware:
+  controllers:
+    type: ESP32-WROOM
+    quantity: 2
+    firmware: MicroPython
+    version: "1.28.0"
+
+  displays:
+    type: SH1106
+    quantity: 2
+    resolution: "128x64"
+    interface: I2C
+
+  inputs:
+    type: digital_rotary_encoder
+    quantity: 2
+
+network:
+  architecture: client_server
+  transport: HTTP
+  clients: 2
+  backend:
+    framework: FastAPI
+    hosting: self_hosted
+
+software:
+  language: MicroPython
+  source_directory: src
+  test_directory: tests
+  demo_directory: demo
+
+features:
+  - message_exchange
+  - rotary_encoder_navigation
+  - OLED_interface
+  - main_menu
+  - messages
+  - presets
+  - settings
+
+configuration:
+  endpoint:
+    environment_variable: MESSAGE_BOX_API_URL
+    required: true
+
+  secrets:
+    stored_in_environment: true
+    committed_to_repository: false
+
+development:
+  version_control: git
+  testing: true
+  hardware_in_the_loop: true
+
+security:
+  credentials_in_repository: false
+  private_endpoints_in_repository: false
+  secrets_in_repository: false
+
+status:
+  prototype: true
+  multi_device: true
