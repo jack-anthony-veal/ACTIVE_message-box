@@ -2,6 +2,9 @@
 
 An embedded messaging system built with two ESP32-WROOM devices, SH1106 128×64 OLED displays, rotary encoders, and a self-hosted FastAPI backend.
 
+## Server Site
+projectserver.org
+
 ## Repo Tree
 ```
 
