@@ -29,11 +29,6 @@ def install_micropython_stubs():
     micropython.const = lambda value: value
     sys.modules["micropython"] = micropython
 
-    framebuf = types.ModuleType("framebuf")
-    framebuf.MONO_VLSB = 0
-    framebuf.FrameBuffer = type("FrameBuffer", (), {"__init__": lambda self, *args, **kwargs: None})
-    sys.modules["framebuf"] = framebuf
-
     machine = types.ModuleType("machine")
 
     class Pin:
@@ -53,7 +48,7 @@ def install_micropython_stubs():
             pass
 
     machine.Pin = Pin
-    machine.I2C = type("I2C", (), {"__init__": lambda self, *args, **kwargs: None})
+    machine.SPI = type("SPI", (), {"__init__": lambda self, *args, **kwargs: None})
     machine.disable_irq = lambda: 0
     machine.enable_irq = lambda state: None
     sys.modules["machine"] = machine
@@ -67,18 +62,19 @@ def install_micropython_stubs():
 
 install_micropython_stubs()
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SCRIPTS = os.path.join(ROOT, "scripts")
+SCRIPTS = os.path.join(ROOT, "client")
 sys.path.insert(0, SCRIPTS)
 
 from app.StateNavigator import StateNavigator
-from states.LoadingMainMenuState import LoadingMainMenuState
-from states.LoadingPresetsState import LoadingPresetsState
-from states.MainMenuState import MainMenuCycleState
+from states.home.LoadingMainMenuState import LoadingMainMenuState
+from states.presets.LoadingPresetsState import LoadingPresetsState
+from states.home.MainMenuState import MainMenuCycleState
 from states.NotifyState import ErrorState, Notify, add_text_to_box
 import states.NotifyState as notify_state_module
-from states.PresetInteract import PresetInteract, SendingState
-from states.PresetMenu import PresetMenu
-from libraries.utils.text_tools import message_from_payload, wrap_text
+from states.presets.PresetInteract import PresetInteract, SendingState
+from states.presets.PresetMenu import PresetMenu
+from libraries.utils.text_layout import layout_text
+from libraries.utils.text_tools import message_from_payload
 
 notify_state_module.time.ticks_ms = lambda: 1000
 notify_state_module.time.ticks_diff = lambda new, old: new - old
@@ -91,11 +87,13 @@ class Display:
     def power_on(self):
         self.calls.append(("power_on",))
 
-    def custom_message(self, *args, **kwargs):
-        self.calls.append(("custom_message", args, kwargs))
-
     def show_error(self, *args, **kwargs):
         self.calls.append(("show_error", args, kwargs))
+
+    def __getattr__(self, name):
+        def record(*args, **kwargs):
+            self.calls.append((name, args, kwargs))
+        return record
 
 
 class Storage:
@@ -149,6 +147,7 @@ class App:
         self.state_manager = StateNavigator(self)
         self.reset_state = LoadingMainMenuState(self)
         self.safe_state = MainMenuCycleState(self, "safe")
+        self.flags = 0
 
 
 def test_state_manager():
@@ -247,7 +246,7 @@ def test_preset_navigation():
 def test_text_tools():
     assert message_from_payload({"message": "hello"}) == "hello"
     assert message_from_payload(None) == "No new messages!"
-    assert wrap_text("123456789", width=4, max_lines=3) == ["1234", "5678", "9"]
+    assert layout_text("123456789", 32, lambda value: len(value) * 8, 3) == ["1234", "5678", "9"]
 
 
 def test_notification_box():

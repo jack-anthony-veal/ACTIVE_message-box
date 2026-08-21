@@ -1,9 +1,9 @@
 from states.proc.StateNavigator import StateNavigator
 from app.api import MessageApiClient
 from config import config
-from hardware_devices.display_device import *
-from hardware_devices.input_device import *
-from hardware_devices.storage import *
+from hardware_devices.display_device import Display
+from hardware_devices.input_device import Button, Dial
+from hardware_devices.storage import Storage
 from libraries.utils.debug import Debug
 from states.presets.LoadingPresetsState import LoadingPresetsState
 from states.home.LoadingMainMenuState import LoadingMainMenuState
@@ -22,7 +22,7 @@ _NON_FATAL = 1 << 4
 class App:
     def __init__(self):
         self.message_api: MessageApiClient = MessageApiClient()
-        self.display: OledDisplay = OledDisplay()
+        self.display: Display = Display()
         self.storage = Storage()
         self.status_codes = {}
         self.dial = Dial()

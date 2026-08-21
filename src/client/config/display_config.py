@@ -1,0 +1,17 @@
+from micropython import const
+from config.gpio_config import (
+    DISPLAY_CS_PIN, DISPLAY_DC_PIN, DISPLAY_MOSI_PIN, DISPLAY_RESET_PIN,
+    DISPLAY_SCK_PIN,
+)
+
+
+DISPLAY_SPI_BUS = const(2)
+DISPLAY_SPI_BAUDRATE = const(20_000_000)
+DISPLAY_SPI_POLARITY = const(0)
+DISPLAY_SPI_PHASE = const(0)
+
+DISPLAY_USE_CS = True
+
+DISPLAY_ROTATION = const(0)
+DISPLAY_COLOR_ORDER = const(0)
+DISPLAY_INVERSION = True

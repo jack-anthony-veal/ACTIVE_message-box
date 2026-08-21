@@ -18,11 +18,11 @@ class SettingsNav:
         self.settings_size = len(self.settings_menu)
         
         self.MENU_CONTROLLER = BaseMenu(self.app.display, self.options_menu)
-        self.SETTINGS_CONTROLLER = BaseScroll(self.app.display.oled, self.settings_menu)
+        self.SETTINGS_CONTROLLER = BaseScroll(self.app.display, self.settings_menu)
         
     def enter_state(self):
-        self.MENU_CONTROLLER.setup()
         self.SETTINGS_CONTROLLER.setup()
+        self.MENU_CONTROLLER.setup()
         self.settings_flag=1
         self.menu_flag=0
         self.index_flag |= _DIRTY
@@ -32,7 +32,8 @@ class SettingsNav:
     
     def handle_input(self, _event, _type):
         if _type == DIAL_EVENT:
-            self.current_index = (self.current_index + event) % self.settings_menu
+            active_size = self.settings_size if self.settings_flag & _DIRTY else self.menu_size
+            self.current_index = (self.current_index + _event) % active_size
             self.index_flag |= _DIRTY
             self.draw()
             return
@@ -60,11 +61,10 @@ class SettingsNav:
             self.SETTINGS_CONTROLLER.refresh(self.current_index)
             if self.current_index == 0:
                 self.MENU_CONTROLLER.refresh(None)
-                
+
         elif self.menu_flag & _DIRTY:
             self.MENU_CONTROLLER.refresh(self.current_index)
         self.index_flag = 0
-            
+
     def update(self):
         return
-    

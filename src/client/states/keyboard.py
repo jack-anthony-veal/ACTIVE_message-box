@@ -2,11 +2,11 @@ import time
 from micropython import const
 import struct
 
-from config import (
-    DIAL_EVENT,
-    KEYBOARD_SCREEN,
-    KEY_POS,
-    BUTTON_PRESS,
+from config import DIAL_EVENT, BUTTON_PRESS
+from config.ui_config import (
+    COLOR_BACKGROUND, COLOR_BORDER, COLOR_PRIMARY, COLOR_SELECTED_BG,
+    COLOR_SELECTED_TEXT, COLOR_SURFACE, COLOR_TEXT, COLOR_TEXT_MUTED,
+    CONTENT_TOP, MENU_ROW_GAP, SCREEN_MARGIN, SCREEN_WIDTH,
 )
 
 _UPPER_CASE = const(1)
@@ -18,32 +18,31 @@ _DIRTY_TEXT = const(2)
 _SELECTED_KEY = const(2)
 _VISIBLE_KEYS = const(5)
 
-_KEY_Y = const(55)
-_KEY_WIDTH = const(24)
-_KEY_HEIGHT = const(10)
+_KEY_Y = const(236)
+_KEY_WIDTH = const(40)
+_KEY_HEIGHT = const(40)
 
-_TEXT_X = const(1)
-_TEXT_Y = const(10)
-_TEXT_COLUMNS = const(14)
+_TEXT_X = const(16)
+_TEXT_Y = const(88)
+_TEXT_COLUMNS = const(26)
 _TEXT_ROWS = const(2)
 _TEXT_LIMIT = const(28)
 
 _FRAME_INTERVAL_MS = const(25)
 _BUTTON_DEBOUNCE_MS = const(400)
 ALPHABET_ = "abcdefghijklmnopqrstuvwxyz1234567890_<~"
-ALPHABET_SHIFT_ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ,!?@£$&*()#:;^%-+_|\/<>"
+ALPHABET_SHIFT_ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ,!?@£$&*()#:;^%-+_|\\/<>"
 
 RETURN_POINTER = "return-kb-data.tmp"
 
 
 
 class Keyboard:
-    KEY_X = (1, 27, 53, 79, 105)
+    KEY_X = (12, 56, 100, 144, 188)
 
     def __init__(self, app, last_state, return_buffer, kb_text="Begin Typing"):
         self.app = app
         self.display = app.display
-        self.oled = app.display.oled
         self.last_state = last_state
         self.return_buffer = return_buffer
         self.kb_text_ = kb_text
@@ -65,7 +64,6 @@ class Keyboard:
 
         self.current = 0
 
-        # Fixed-size typed-text buffer.
         self.text_buffer = bytearray(_TEXT_LIMIT)
         self.text_length: int = 0
 
@@ -89,23 +87,35 @@ class Keyboard:
         )
 
     def enter_state(self):
-        self.oled.fill(0)
-
-        self.oled.text(
+        display = self.display
+        display.begin_screen("Keyboard", "Rotate")
+        display.draw_text_block(
             self.kb_text_,
-            0,
-            0,
-            1,
+            SCREEN_MARGIN,
+            CONTENT_TOP + 8,
+            SCREEN_WIDTH - SCREEN_MARGIN * 2,
+            color=COLOR_TEXT_MUTED,
+            max_lines=1,
+            bottom=_TEXT_Y,
         )
-        
-        self.oled.text("<:bksp|_:spc", 0, 40, 1)
-        self.oled.text("dbl:caps|~:ent", 0, 32, 1)
-
-
-        self.oled.hline(1, 9, 122, 1)
-        self.oled.hline(1, 28, 122, 1)
-        self.oled.vline(1, 8, 20, 1)
-        self.oled.vline(122, 8, 20, 1)
+        display.fill_rect(
+            _TEXT_X - 4, _TEXT_Y - 4,
+            SCREEN_WIDTH - (_TEXT_X - 4) * 2, 76,
+            COLOR_SURFACE,
+        )
+        display.rect(
+            _TEXT_X - 4, _TEXT_Y - 4,
+            SCREEN_WIDTH - (_TEXT_X - 4) * 2, 76,
+            COLOR_BORDER,
+        )
+        display.text("< Backspace    _ Space", SCREEN_MARGIN, 176, COLOR_TEXT_MUTED)
+        display.text("Double press changes case", SCREEN_MARGIN, 200, COLOR_TEXT_MUTED)
+        display.text("~ Enter", SCREEN_MARGIN, 220, COLOR_TEXT_MUTED)
+        display.draw_nav_bar(
+            left="Rotate", center="Case", right="Press",
+            left_icon="action_scroll", center_icon="nav_change_edit",
+            right_icon="nav_enter_select",
+        )
         self.case_dirty |= _LOWER_CASE
         self.wait_buffer = 0
         
@@ -152,7 +162,6 @@ class Keyboard:
 
         self.current += movement
 
-        # Avoid modulo for the normal single-step encoder case.
         while self.current >= self.alphabet_length:
             self.current -= self.alphabet_length
 
@@ -197,12 +206,9 @@ class Keyboard:
                 
                 self.app.state_manager.replace_state(self.last_state)
                 return
-                # ASCII "<" acts as backspace.
             if character == 60:
                 self.backspace()
                 return
-
-        # Preserve the previous behaviour: only insert letters.
 
         try:
             self.text_buffer[self.text_length] = ord(character)
@@ -213,7 +219,6 @@ class Keyboard:
 
         self.dirty |= _DIRTY_TEXT
 
-        # A button press should appear immediately.
         self.draw(force=True)
 
     def draw(self, force=False):
@@ -234,38 +239,28 @@ class Keyboard:
         if dirty & _DIRTY_KEYS:
             self._draw_keys()
 
-        self._show()
-
         self.dirty = 0
         self.last_frame = time.ticks_ms()
 
     def _draw_keys(self):
-        oled = self.oled
-        fill_rect = oled.fill_rect
-        text = oled.text
+        display = self.display
 
-        # Clear only the keyboard area.
-        fill_rect(
-            0,
-            55,
-            128,
-            12,
-            0,
-        )
+        display.fill_rect(0, _KEY_Y - 4, SCREEN_WIDTH, _KEY_HEIGHT + 8, COLOR_BACKGROUND)
 
         for index in range(_VISIBLE_KEYS):
             x = self.KEY_X[index]
 
             if index == _SELECTED_KEY:
-                fill_rect(
-                    x,
-                    _KEY_Y,
-                    _KEY_WIDTH,
-                    _KEY_HEIGHT,
-                    1,
-                )
+                background = COLOR_SELECTED_BG
+                foreground = COLOR_SELECTED_TEXT
             else:
-                self._draw_corners(x)
+                background = COLOR_SURFACE
+                foreground = COLOR_TEXT
+            display.fill_rect(x, _KEY_Y, _KEY_WIDTH, _KEY_HEIGHT, background)
+            display.rect(
+                x, _KEY_Y, _KEY_WIDTH, _KEY_HEIGHT,
+                COLOR_PRIMARY if index == _SELECTED_KEY else COLOR_BORDER,
+            )
 
             offset = index - _SELECTED_KEY
             alphabet_index = self.current + offset
@@ -277,46 +272,22 @@ class Keyboard:
                 alphabet_index += self.alphabet_length
     
             character = chr(self.alphabet[alphabet_index])
-            color = 0 if index == _SELECTED_KEY else 1
-
-            text(
-                character,
-                KEY_POS[index][0],
-                KEY_POS[index][1],
-                color,
+            char_x = x + (_KEY_WIDTH - display.measure_text(character)) // 2
+            display.text(
+                character, char_x, _KEY_Y + 12, foreground, background
             )
 
     def _draw_corners(self, x):
-        oled = self.oled
-        hline = oled.hline
-        vline = oled.vline
-
-        y = _KEY_Y
-        right = x + _KEY_WIDTH - 1
-        bottom = y + _KEY_HEIGHT - 1
-        size = 4
-
-        hline(x, y, size, 1)
-        vline(x, y, size, 1)
-
-        hline(right - size + 1, y, size, 1)
-        vline(right, y, size, 1)
-
-        hline(x, bottom, size, 1)
-        vline(x, bottom - size + 1, size, 1)
-
-        hline(right - size + 1, bottom, size, 1)
-        vline(right, bottom - size + 1, size, 1)
+        self.display.rect(x, _KEY_Y, _KEY_WIDTH, _KEY_HEIGHT, COLOR_BORDER)
 
     def _draw_text(self):
-        oled = self.oled
-
-        oled.fill_rect(
+        display = self.display
+        display.fill_rect(
             _TEXT_X,
             _TEXT_Y,
-            _TEXT_COLUMNS * 8,
-            _TEXT_ROWS * 8,
-            0,
+            _TEXT_COLUMNS * display.font_width,
+            _TEXT_ROWS * 20,
+            COLOR_SURFACE,
         )
 
         for index in range(self.text_length):
@@ -327,19 +298,13 @@ class Keyboard:
                 self.backspace()
                 return
             
-            oled.text(
+            display.text(
                 char_,
-                _TEXT_X + column * 8,
-                _TEXT_Y + row * 8,
-                1,
+                _TEXT_X + column * display.font_width,
+                _TEXT_Y + row * 20,
+                COLOR_TEXT,
+                COLOR_SURFACE,
             )
-
-    def _show(self):
-        try:
-            self.oled.show()
-        except OSError:
-            time.sleep_ms(5)
-            self.oled.show()
 
     def backspace(self):
         if self.text_length == 0:

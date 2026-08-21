@@ -1,6 +1,5 @@
-import math
-
 from config import BUTTON_PRESS, DIAL_EVENT
+from config.ui_config import CONTENT_BOTTOM, CONTENT_TOP, SCREEN_MARGIN, SCREEN_WIDTH
 from states.NotifyState import Notify, ErrorState
 _OTHER = 1 << 0
 _NON_FATAL_API = 1 << 1
@@ -43,31 +42,22 @@ class PresetInteract:
         if not self.index_changed: return
         self.index_changed = False
 
-        final = ''
-        x_axis = 0
-
-        try:
-            for index, option in enumerate(self.options):
-                if index == self.current_index:
-                    final = final + ' > ' + option.upper()
-                else:
-                    final = final + '' +  option.lower()
-
-            x_axis = math.floor((128 // 2) - (len(final) * 8) // 2)
-
-
-        except Exception as MathErr:
-            self.app.state_manager.replace_state(ErrorState(self.app, MathErr, 32))
-            return
-
-        try:
-            self.app.display.custom_message(final, wrap=False, fill_all=False,
-                                        fill_start_line=56, fill_x_axis=128, fill_y_axis=8,
-                                        y_axis=56, x_axis=x_axis
-                                        )
-        except Exception as ERR:
-            self.app.state_manager.replace_state(ErrorState(self.app, ERR, 21))
-            return
+        display = self.app.display
+        display.begin_screen("Send preset")
+        display.draw_text_block(
+            self.send_data,
+            SCREEN_MARGIN,
+            CONTENT_TOP + 20,
+            SCREEN_WIDTH - SCREEN_MARGIN * 2,
+            bottom=CONTENT_BOTTOM,
+        )
+        display.draw_nav_bar(
+            left="Back",
+            right="Send",
+            selected=0 if self.current_index == 0 else 2,
+            left_icon="nav_back",
+            right_icon="nav_send",
+        )
 
 
     def exit_state(self):
@@ -88,7 +78,7 @@ class SendingState:
         if self.shown: return
         self.shown = True
 
-        self.app.display.custom_message(self.state_screen, fill_all=True, x_axis=0, y_axis=0, wrap=True)
+        self.app.display.draw_loading("Sending preset", "state_sending")
 
         try:
             success, data = self.app.message_api.send_preset(self.data)

@@ -1,10 +1,10 @@
 from app.StateNavigator import StateNavigator
-from states.LoadingMainMenuState import LoadingMainMenuState
-from states.LoadingPresetsState import LoadingPresetsState
-from states.MainMenuState import MainMenuCycleState
+from states.home.LoadingMainMenuState import LoadingMainMenuState
+from states.presets.LoadingPresetsState import LoadingPresetsState
+from states.home.MainMenuState import MainMenuCycleState
 from states.NotifyState import ErrorState, Notify
-from states.PresetInteract import PresetInteract, SendingState
-from states.PresetMenu import PresetMenu
+from states.presets.PresetInteract import PresetInteract, SendingState
+from states.presets.PresetMenu import PresetMenu
 
 
 RESULTS = []
@@ -22,8 +22,8 @@ class Display:
     def power_on(self):
         return
 
-    def custom_message(self, *args, **kwargs):
-        return
+    def __getattr__(self, name):
+        return lambda *args, **kwargs: None
 
 
 class Storage:
@@ -67,6 +67,7 @@ class App:
         self.state_manager = StateNavigator(self)
         self.reset_state = LoadingMainMenuState(self)
         self.safe_state = MainMenuCycleState(self, "safe")
+        self.flags = 0
 
 
 def test_full_navigation():

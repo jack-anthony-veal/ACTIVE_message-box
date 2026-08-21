@@ -2,13 +2,9 @@ import gc
 import sys
 import time
 import esp
-from machine import I2C
 import network
 import esp32
-from machine import Pin, reset
 from config.config import *
-from libraries import sh1106
-from libraries.rotary_irq_esp import RotaryIRQ
 from start_up.tests import *
 from hardware_devices.input_device import OnSwitch
 
@@ -20,53 +16,6 @@ del switch
 sys.path.append('config')
 print(str(get_reset_reason()))
 gc.collect()
-
-
-try:
-    i2c_bus = I2C(
-        0,
-        scl=Pin(I2C_SCL_PIN),
-        sda=Pin(I2C_SDA_PIN),
-        freq=100000
-    )
-
-    dial = RotaryIRQ(
-                pin_num_clk=18,
-                pin_num_dt=19,
-                incr=1,
-                range_mode=RotaryIRQ.RANGE_WRAP,
-                pull_up = True,
-                half_step=False,
-                reverse=True,
-    )
-
-    button = Pin(
-                23,
-                Pin.IN,
-                Pin.PULL_UP
-    )
-
-except Exception as FATALERR:
-    print(str(FATALERR))
-    time.sleep(3)
-    gc.collect()
-    reset()
-
-
-def test_cycle(button_, dial_, i2c_):
-    fetch_api_token()
-    time.sleep_ms(50)
-    repr(test_i2c_bus(i2c_, (I2C_HEX_1, I2C_HEX_2)))
-    time.sleep_ms(50)
-    repr(test_encoder_idle(dial_))
-    time.sleep_ms(50)
-    repr(test_button_idle(button_))
-    time.sleep_ms(50)
-    repr(test_free_storage())
-    time.sleep_ms(20)
-    repr(test_storage())
-    time.sleep_ms(20)
-
 
 
 def wifi_stats():
@@ -102,6 +51,4 @@ def connect_wifi():
         return
 
 
-#test_cycle(dial_=dial, button_=button, i2c_=i2c_bus)
 #connect_wifi()
-

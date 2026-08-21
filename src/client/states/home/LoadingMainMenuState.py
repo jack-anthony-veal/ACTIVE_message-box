@@ -63,10 +63,4 @@ class LoadingMainMenuState:
 
     def draw(self):
         self.app.display.power_on()
-        self.app.display.custom_message(
-            "Loading messages",
-            x_axis=0,
-            y_axis=8,
-            fill_all=True,
-            wrap=False,
-        )
+        self.app.display.draw_loading("Loading messages", "state_loading_message")

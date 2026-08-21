@@ -1,6 +1,6 @@
 # Message-Box
 
-An embedded messaging system built with two ESP32-WROOM devices, SH1106 128×64 OLED displays, rotary encoders, and a self-hosted FastAPI backend.
+An embedded messaging system built with two ESP32-WROOM devices, GMTO24-08-SPI8P 240×320 ST7789V LCDs, rotary encoders, and a self-hosted FastAPI backend.
 
 ## Server Site
 projectserver.org
@@ -57,7 +57,6 @@ projectserver.org
 │   │   │   ├── config.py
 │   │   │   ├── rotary_irq_esp.py
 │   │   │   ├── rotary.py
-│   │   │   └── sh1106.py
 │   │   ├── logs
 │   │   │   └── errors.txt
 │   │   ├── start_up
@@ -127,12 +126,12 @@ projectserver.org
 
 `Message-Box A ⇄ FastAPI Server ⇄ Message-Box B`
 
-Each ESP32 runs MicroPython and communicates with the backend over HTTP. The OLED provides the interface and the rotary encoder provides navigation and input.
+Each ESP32 runs MicroPython and communicates with the backend over HTTP. The ST7789V LCD provides the interface and the rotary encoder provides navigation and input.
 
 ## Hardware
 
 - 2× ESP32-WROOM
-- 2× SH1106 128×64 OLED
+- 2× GMTO24-08-SPI8P 240×320 ST7789V LCD
 - 2× rotary encoders
 
 ## Software
@@ -140,7 +139,7 @@ Each ESP32 runs MicroPython and communicates with the backend over HTTP. The OLE
 - MicroPython 1.28.0
 - Python / FastAPI
 - HTTP
-- I²C
+- SPI
 - Automated tests
 
 ## Repository
@@ -152,14 +151,14 @@ Each ESP32 runs MicroPython and communicates with the backend over HTTP. The OLE
 ## Features
 
 - Two-device messaging
-- OLED interface
+- Colour LCD interface
 - Rotary encoder navigation
 - Menus, presets and settings
 - Self-hosted backend
 
 ## Setup
 
-1. Flash MicroPython 1.28.0 to both ESP32s.
+1. Flash `src/client/firmware/micropython-1.28.0-esp32-st7789.bin` to both ESP32s.
 2. Upload the firmware from `src/`.
 3. Configure the API endpoint locally.
 4. Start the FastAPI server.

@@ -3,7 +3,6 @@ class Config:
         pass
     @staticmethod
     def parse(value):
-        """Convert an INI string into a basic Python value."""
         value = value.strip()
         lower_value = value.lower()
 
@@ -28,7 +27,6 @@ class Config:
 
     @staticmethod
     def format(value):
-        """Convert a Python value into an INI-safe string."""
         if value is True:
             return "true"
 
@@ -43,20 +41,6 @@ class Config:
     @staticmethod
     def read(filename):
         c = Config()
-        """
-        Read an INI file into a nested dictionary.
-
-        Example:
-        {
-            "wifi": {
-                "ssid": "My WiFi",
-                "password": "secret"
-            },
-            "server": {
-                "port": 8080
-            }
-        }
-        """
         config = {}
         current_section = None
 
@@ -96,12 +80,6 @@ class Config:
     @staticmethod
     def write(filename, config):
         c = Config()
-        """
-        Write a nested dictionary to an INI file.
-
-        Top-level normal values are written before sections.
-        Top-level dictionaries become INI sections.
-        """
         with open(filename, "w") as file:
             # Write global values first
             for key, value in config.items():

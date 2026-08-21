@@ -29,8 +29,8 @@ DATA.mkdir(exist_ok=True)
 PRESETS_FILE = DATA / "presets.json"
 PEOPLE = {"jack", "ella"}
 MAX_PRESETS = 5
-OLED_COLS = 16
-OLED_ROWS = 6
+DISPLAY_COLS = 27
+DISPLAY_ROWS = 10
 
 
 class Message(BaseModel):
@@ -79,12 +79,12 @@ def clean_preset(text: str):
 
     rows_used = 0
     for line in text.split("\n"):
-        rows_used += max(1, (len(line) + OLED_COLS - 1) // OLED_COLS)
+        rows_used += max(1, (len(line) + DISPLAY_COLS - 1) // DISPLAY_COLS)
 
-    if rows_used > OLED_ROWS:
+    if rows_used > DISPLAY_ROWS:
         raise HTTPException(
             status_code=400,
-            detail="Preset must fit 128x64 display: max 16 chars x 6 lines",
+            detail="Preset must fit the 240x320 display: max 27 chars x 10 lines",
         )
 
     return text

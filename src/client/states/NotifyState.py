@@ -2,22 +2,9 @@ import time
 import gc
 import network
 from config.config import *
-from libraries.utils.ascii import MESSAGE_SENT_BORDER_RUNS
-import math
 
 def add_text_to_box(title, data):
-    data = str(data)[:13]
-    title = str(title)[:13]
-
-    title_len = len(title)
-    data_len = len(data)
-    title_left = (13 - title_len) // 2
-    data_left = (13 - data_len) // 2
-    title_: str = (' ' * title_left) + title + (' ' * (13 - title_len - title_left))
-    data_: str = (' ' * data_left) + data + (' ' * (13 - data_len - data_left))
-
-    del title_len, data_len
-    return title_, data_
+    return str(title), str(data)
 
 class Notify:
     def __init__(self, app, data, title):
@@ -44,7 +31,7 @@ class Notify:
     def draw(self):
         if self.displayed: return
         title_text, body_text = add_text_to_box(self.title, self.data)
-        self.app.display.show_error(MESSAGE_SENT_BORDER_RUNS, title_text, body_text)
+        self.app.display.show_error("state_success", title_text, body_text)
         self.displayed = True
 
     def handle_input(self, event, type):
@@ -72,7 +59,7 @@ class ErrorState:
         connected_ = network.WLAN(network.STA_IF).isconnected()
 
         if not connected_:
-            self.screen = WIFI_ERROR_RUNS
+            self.screen = "state_wifi_error"
             self.error_code = 40
             self.draw()
             del connected_
@@ -81,13 +68,17 @@ class ErrorState:
         code = self.error_code
 
         if code == 0:
-            screen = ANT_MAN_SCREEN
+            screen = "state_generic_error"
         elif code in range(10,14):
-            screen = HTTP_ERROR_RUNS
-        elif code in range(20, 33):
-            screen = DEVICE_ERROR_RUNS
+            screen = "state_http_error"
+        elif code in range(20, 25):
+            screen = "state_device_error"
+        elif code in range(30, 33):
+            screen = "state_software_error"
+        elif code == 40:
+            screen = "state_wifi_error"
         else:
-            screen = SOFTWARE_ERROR_RUNS
+            screen = "state_generic_error"
 
         self.screen = screen
 
@@ -131,7 +122,10 @@ class ErrorState:
 
                     try:
                         # TODO: Make screen nicer
-                        self.app.display.custom_message("Fatal Error... Resetting \n :'(", fill_all=True)
+                        self.app.display.begin_screen("Fatal error")
+                        self.app.display.draw_text_block(
+                            "Resetting the device", 12, 88, 216
+                        )
                         time.sleep(5)
 
                     except Exception:

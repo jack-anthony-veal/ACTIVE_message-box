@@ -70,43 +70,62 @@ def test_api_endpoint(api_endpoint):
 
     return TestResult("HTTP Server", TestResult.PASS, "HTTP1/1 GET & ICMP probe Success!")
 
-def test_i2c_bus(i2c, expected_addresses):
+def test_st7789_driver():
     try:
-        detected = i2c.scan()
-        missing = [
-            address
-            for address in expected_addresses
-            if address not in detected
-        ]
-
-        if missing:
-            del i2c
-            gc.collect()
-            return TestResult(
-                "I2C bus",
-                TestResult.FAIL,
-                "Missing: {}".format(
-                    [hex(address) for address in missing]
-                ),
-                critical=True,
-                data={"detected": detected}
-            )
-        del i2c
+        import st7789
+        driver = getattr(st7789, "ST7789")
+        del driver, st7789
         gc.collect()
         return TestResult(
-            "I2C bus",
+            "ST7789 driver",
             TestResult.PASS,
-            "Detected {}".format(
-                [hex(address) for address in detected]
-            ),
-            critical=True,
-            data={"detected": detected}
+            "C module is available",
+            critical=True
         )
-
     except Exception as error:
         gc.collect()
         return TestResult(
-            "I2C bus",
+            "ST7789 driver",
+            TestResult.FAIL,
+            repr(error),
+            critical=True
+        )
+
+
+def test_display_configuration():
+    try:
+        from config.display_config import (
+            DISPLAY_SPI_BAUDRATE, DISPLAY_SPI_BUS, DISPLAY_SPI_PHASE,
+            DISPLAY_SPI_POLARITY,
+        )
+        from config.gpio_config import (
+            DISPLAY_CS_PIN, DISPLAY_DC_PIN, DISPLAY_MOSI_PIN,
+            DISPLAY_RESET_PIN, DISPLAY_SCK_PIN,
+        )
+        pins = (
+            DISPLAY_SCK_PIN, DISPLAY_MOSI_PIN, DISPLAY_DC_PIN,
+            DISPLAY_RESET_PIN, DISPLAY_CS_PIN,
+        )
+        valid = (
+            DISPLAY_SPI_BUS == 2
+            and DISPLAY_SPI_BAUDRATE == 20_000_000
+            and DISPLAY_SPI_POLARITY == 0
+            and DISPLAY_SPI_PHASE == 0
+            and pins == (18, 23, 16, 4, 5)
+            and len(set(pins)) == len(pins)
+        )
+        if not valid:
+            raise ValueError("unexpected ST7789 SPI configuration")
+        return TestResult(
+            "ST7789 configuration",
+            TestResult.PASS,
+            "SPI2 20MHz mode 0 pins 18/23/16/4/5",
+            critical=True
+        )
+    except Exception as error:
+        gc.collect()
+        return TestResult(
+            "ST7789 configuration",
             TestResult.FAIL,
             repr(error),
             critical=True

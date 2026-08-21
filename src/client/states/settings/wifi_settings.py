@@ -5,6 +5,10 @@ import ujson as json
 from libraries.utils.menutools import MenuTools
 from libraries.config import Config
 from states.keyboard import Keyboard
+from config.ui_config import (
+    COLOR_ERROR, COLOR_SUCCESS, CONTENT_BOTTOM, CONTENT_TOP,
+    SCREEN_MARGIN, SCREEN_WIDTH, STATE_ART_X, STATE_ART_Y, STATE_TEXT_Y,
+)
 
 try:
     import config.config as _config
@@ -26,10 +30,7 @@ _MENU_DIRTY = const(1 << 1)
 _MAIN_SELECTED = const(1 << 0)
 _MENU_SELECTED = const(1 << 1)
 
-_MAX_DISPLAY_LIST = const(3)
-_DISPLAY_WIDTH = const(128)
-_LIST_AREA_HEIGHT = const(54)
-_ROW_HEIGHT = const(18)
+_MAX_DISPLAY_LIST = const(5)
 import os
 
 class WifiSettings:
@@ -54,14 +55,10 @@ class WifiSettings:
         self.dirty = _LIST_DIRTY | _MENU_DIRTY
 
         self.menu_tools = MenuTools(self.app)
-        self.display_locs = (
-            (0, 0),
-            (0, 18),
-            (0, 36),
-        )
-
     def enter_state(self):
-        self.app.display.oled.fill(0)
+        self.app.display.begin_screen(
+            "Wi-Fi networks", "Scanning", ("status_wifi_0", "status_sync")
+        )
         errors = []
         station = self.station
         station.active(False)
@@ -90,7 +87,6 @@ class WifiSettings:
                 if not ssid:
                     ssid = "<hidden>"
 
-                # Ignore duplicate SSIDs and retain the first scan result.
                 if ssid in seen_ssids:
                     continue
 
@@ -116,35 +112,31 @@ class WifiSettings:
         self.draw()
 
     def _draw_borders(self):
-        oled = self.app.display.oled
-
-        for x, y in self.display_locs:
-            oled.hline(x, y, _DISPLAY_WIDTH, 1)
-            oled.hline(x, y + _ROW_HEIGHT - 1, _DISPLAY_WIDTH, 1)
-            oled.vline(x, y, _ROW_HEIGHT, 1)
-            oled.vline(_DISPLAY_WIDTH - 1, y, _ROW_HEIGHT, 1)
+        return
 
     def _menu(self):
         selected = self.menu_index if self.menu_flag & _MENU_SELECTED else None
         self.menu_tools._draw_selected(selected, "enter", "back")
 
     def _draw_network_list(self):
-        oled = self.app.display.oled
-        oled.fill_rect(0, 0, _DISPLAY_WIDTH, _LIST_AREA_HEIGHT, 0)
+        display = self.app.display
+        display.begin_screen("Wi-Fi networks", "Rotate")
 
         if not self.networks:
-            oled.text("No networks", 8, 17, 1)
-            oled.text("found", 8, 27, 1)
+            display.draw_text_block(
+                "No networks found",
+                SCREEN_MARGIN,
+                CONTENT_TOP + 32,
+                SCREEN_WIDTH - SCREEN_MARGIN * 2,
+                bottom=CONTENT_BOTTOM,
+            )
             self.networks.append(("Go, back", "X", "X"))
-            self._draw_borders()
             return
 
         first = 0 if self.current_index is None else self.current_index
         visible_count = min(self.list_max_display, len(self.networks))
 
         for row_index in range(self.list_max_display):
-            box_x, box_y = self.display_locs[row_index]
-
             if row_index >= visible_count:
                 continue
 
@@ -154,24 +146,9 @@ class WifiSettings:
             is_selected = (
                 row_index == 0 and bool(self.main_flag & _MAIN_SELECTED)
             )
-            background = 1 if is_selected else 0
-            text_color = 0 if is_selected else 1
-
-            oled.fill_rect(
-                box_x + 1,
-                box_y + 1,
-                _DISPLAY_WIDTH - 2,
-                _ROW_HEIGHT - 2,
-                background,
+            display.draw_wifi_row(
+                row_index, str(ssid), rssi, security, selected=is_selected
             )
-
-            ssid_text = str(ssid)[:15]
-            details_text = (str(rssi) + "dBm S" + str(security))[:15]
-
-            oled.text(ssid_text, box_x + 2, box_y + 1, text_color)
-            oled.text(details_text, box_x + 2, box_y + 9, text_color)
-
-        self._draw_borders()
 
     def _select_current_network(self):
         if self.current_index is None or not self.networks:
@@ -264,31 +241,12 @@ class WifiSettings:
         if self.dirty & _MENU_DIRTY:
             self._menu()
 
-        self._show_queue()
         self.dirty = 0
-
-    def _show_queue(self):
-        oled = self.app.display.oled
-
-        try:
-            oled.show()
-        except OSError:
-            time.sleep_ms(5)
-            oled.show()
             
     def exit_state(self):
         return
     
     
-"""
-Intermediate between keyboard and WifiState
-TODO: include graphics i.e animations ect
-faulty password vs fatal error handling
-hidden netework proper handler
-clean up for memory in the heap
-"""
-    
-
 class Connecting:
     def __init__(self, app, return_buf, ssid_buf):
         self.app = app
@@ -309,10 +267,12 @@ class Connecting:
         return
     
     def draw(self):
-        self.app.display.oled.fill(0)
-        self.app.display.oled.text("Connecting...", 1, 10, 1)
-        self.app.display.oled.text(self.ssid_, 1, 20, 1)
-        self.app.display.oled.show()
+        display = self.app.display
+        display.begin_screen("Connecting", "Wi-Fi", "status_sync")
+        display.draw_text_block(
+            self.ssid_, SCREEN_MARGIN, CONTENT_TOP + 40,
+            SCREEN_WIDTH - SCREEN_MARGIN * 2,
+        )
     
         self.station.active(False)
         time.sleep_ms(20)
@@ -328,29 +288,39 @@ class Connecting:
 
         if not self.station.isconnected():
             connectionError = "Cant connect to hidden nets" if self.ssid_.lower() == "<hidden>" else "couldnt connect"
-            self.app.display.oled.fill(0)
-            self.app.display.oled.text("ERROR OCCURED", 1, 10, 1)
-            self.app.display.oled.text(connectionError, 1, 30, 1)
-            self.app.display.oled.show()
+            display.begin_screen("Connection failed", "Error", "status_wifi_error")
+            display.draw_asset("state_wifi_error", STATE_ART_X, STATE_ART_Y)
+            display.draw_text_block(
+                connectionError, SCREEN_MARGIN, STATE_TEXT_Y,
+                SCREEN_WIDTH - SCREEN_MARGIN * 2, color=COLOR_ERROR,
+            )
             time.sleep(3)
-        
-            
             try:
                 self.station.connect(WIFI_SSID, WIFI_PASSWORD) # TODO: make config load from ini in boot
                 
                 
             except Exception as FatalConnErr:
-                self.app.display.oled.fill(0)
-                self.app.display.oled.text("cant connect w saved creds..")
-                self.app.display.show()
+                display.begin_screen("Connection failed", "Error")
+                display.draw_text_block(
+                    "Cannot reconnect with saved credentials",
+                    SCREEN_MARGIN,
+                    CONTENT_TOP + 32,
+                    SCREEN_WIDTH - SCREEN_MARGIN * 2,
+                    color=COLOR_ERROR,
+                )
                 time.sleep(5)
                 
         
         else:
-            self.app.display.oled.fill_rect(1, 10, 124, 20, 0)
-            self.app.display.oled.text("Connected!", 1, 10, 1)
-            self.app.display.oled.text("Saving...", 1, 20, 1)
-            self.app.display.oled.show()
+            display.begin_screen("Connected", "Wi-Fi", "status_wifi_4")
+            display.draw_asset("state_wifi_success", STATE_ART_X, STATE_ART_Y)
+            display.draw_text_block(
+                "Saving network settings",
+                SCREEN_MARGIN,
+                STATE_TEXT_Y,
+                SCREEN_WIDTH - SCREEN_MARGIN * 2,
+                color=COLOR_SUCCESS,
+            )
             
             
             self.ssid_ = self.config_func.format(self.ssid_)
@@ -369,5 +339,3 @@ class Connecting:
         return
     def exit_state(self):
         return
-
-

@@ -4,25 +4,22 @@ from libraries.rotary_irq_esp import RotaryIRQ
 from config.config import (
     INPUT_DEBOUNCE_MS, BUTTON_PRESS, DIAL_EVENT,
 )
+from config.gpio_config import BUTTON_PIN, DIAL_CLK_PIN, DIAL_DT_PIN, WAKE_PIN
 from machine import Pin
-
-"""
-None refers to no input and False / True refer to specific actions
-"""
 
 # Removed ToggleInput base class as it was causing inefficient resource allocation.
 # Dial and Button will now initialize their specific hardware directly.
 class OnSwitch:
     def __init__(self):
-        pin_right = Pin(33, Pin.IN, Pin.PULL_UP)
+        pin_right = Pin(WAKE_PIN, Pin.IN, Pin.PULL_UP)
         self.wake_up_pins = [pin_right]
 
 
 class Dial:
     def __init__(self):
         self.rotary_encoder = RotaryIRQ(
-            pin_num_clk=18,
-            pin_num_dt=19,
+            pin_num_clk=DIAL_CLK_PIN,
+            pin_num_dt=DIAL_DT_PIN,
             incr=1,
             range_mode=RotaryIRQ.RANGE_WRAP,
             pull_up = True,
@@ -78,7 +75,7 @@ class Dial:
 class Button:
     def __init__(self):
         self.button_pin = Pin(
-            23,
+            BUTTON_PIN,
             Pin.IN,
             Pin.PULL_UP
         )

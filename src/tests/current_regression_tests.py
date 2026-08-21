@@ -17,7 +17,7 @@ def check(name, function):
 
 
 def load_navigator():
-    path = os.path.join(ROOT, "scripts", "app", "StateNavigator.py")
+    path = os.path.join(ROOT, "client", "app", "StateNavigator.py")
     spec = importlib.util.spec_from_file_location("navigator_direct", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -87,7 +87,7 @@ def test_input_none_type_forwarding():
 
 def test_package_import_graph():
     result = subprocess.run(
-        [sys.executable, os.path.join(ROOT, "device_tests", "full_local_tests.py")],
+        [sys.executable, os.path.join(ROOT, "tests", "full_local_tests.py")],
         capture_output=True,
         text=True,
     )
