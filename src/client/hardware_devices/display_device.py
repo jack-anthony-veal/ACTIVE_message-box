@@ -16,6 +16,10 @@ from libraries.utils.text_tools import message_from_payload, wrap_text
 from machine import Pin, I2C
 
 
+
+#TODO: reconf for spi data pins (320x240)
+#TODO: Create a .bin for hex color vals in class to parse thru hline ect
+#TODO: Integrate driver premade wrap and scroll methods
 class OledDisplay:
     def __init__(self):
         self.width: int = OLED_BORDER_WIDTH
@@ -39,7 +43,7 @@ class OledDisplay:
             length = data[index + 2]
             self.oled.hline(x, y, length, color)
 
-
+#TODO: Requires blit map for new
     def show_error(self, art_runs, message_1="", message_2=""):
         x_ = [message_1, message_2]
         x_ = [x[:14] for x in x_]
@@ -72,7 +76,7 @@ class OledDisplay:
             self.oled.show()
 
     def power_on(self):
-        try:
+        try: # TODO: invalid for new driver
             self.oled.poweron()
             self.oled.fill(0)
         except Exception:
@@ -123,7 +127,7 @@ class OledDisplay:
 
         del data, start_line, x_axis, y_axis, fill_x_axis, fill_y_axis, fill_start_line
         return
-
+#TODO: remove this fucking bs istg idk why i spent so much bloody time on it
     def draw_wrap_text(self, message, return_next_line=False, start_line=0, x_axis=0, color=1, max_=True):
         message = str(message)
         line_limit = max(0, OLED_MAX_LINES - start_line) if max_ else None
