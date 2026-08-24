@@ -4,7 +4,7 @@ from libraries.config import Config
 
 
 # API / NETWORK
-TOKEN = None
+TOKEN = cwvd7CsVgyy6xxbxupgw
 
 SEND_JACK_URL = "http://projectserver.org/send/jack"
 READ_ELLA_URL = "http://projectserver.org/read/ella"

@@ -16,3 +16,4 @@ class App:
         self.state_manager = StateNavigator(self)
         self.reset_state = LoadingMainMenuState(self)
         self.flags = 0
+

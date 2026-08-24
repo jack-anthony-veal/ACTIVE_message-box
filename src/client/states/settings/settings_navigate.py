@@ -75,13 +75,19 @@ class SettingsNav:
                 self.menu_flag = 0
                 self.settings_flag |= _DIRTY
                 self.index_flag |= _DIRTY
-                self.draw()
+                from states.home.LoadingMainMenuState import LoadingMainMenuState
+                self.app.state_manager.push_state(LoadingMainMenuState(self.app))
+                return
+
                 return
             if (
                 self.current_index == _ACTION_EDIT
-                and self.last_opt_settings == _SETTINGS_WIFI_INDEX
             ):
-                self.app.state_manager.push_state(WifiState(self.app))
+                match self.last_opt_settings:
+                    case 0:
+                        return                    
+                    case _SETTINGS_WIFI_INDEX:
+                        self.app.state_manager.push_state(WifiState(self.app))
     def draw(self):
         if not self.index_flag & _DIRTY:
             return
@@ -99,7 +105,6 @@ class SettingsNav:
                     selected=item_index == self.current_index,
                     icon=icon,
                 )
-            self._draw_nav_bar()
         elif self.menu_flag & _DIRTY:
             self._draw_nav_bar(self.current_index)
         self.index_flag = 0

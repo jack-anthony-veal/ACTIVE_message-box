@@ -1,7 +1,7 @@
 from assets.registry import ICONS
 from config.config import (
     BUTTON_PRESS, HOME_PRESETS_INDEX, HOME_SETTINGS_INDEX, LEFT_DIAL,
-    RIGHT_DIAL,
+    RIGHT_DIAL, HOME_MESSAGE_INDEX
 )
 from states.presets.LoadingPresetsState import LoadingPresetsState
 from states.settings.settings_navigate import SettingsNav
@@ -42,6 +42,8 @@ class MainMenuCycleState:
         if event is None or event_type is None:
             return
         if event_type == BUTTON_PRESS:
+            if self.current_index == HOME_MESSAGE_INDEX:
+                self.app.state_manager.push_state()
             if self.current_index == HOME_PRESETS_INDEX:
                 self.app.state_manager.push_state(LoadingPresetsState(self.app))
             elif self.current_index == HOME_SETTINGS_INDEX:

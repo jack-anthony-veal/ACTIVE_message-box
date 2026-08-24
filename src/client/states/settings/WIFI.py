@@ -52,6 +52,10 @@ class WifiState:
 
     def _draw_status(self):
         display = self.app.display
+        status_label = "Checking"
+        status_asset = ICONS["status"]["sync"]
+        state_asset = None
+        display.begin_screen("Wi-Fi", status_label, status_asset)
         status = str(self.connection_info["Status"])
         connected = status == "Connected"
         status_label = "Online" if connected else "Offline"
@@ -65,11 +69,7 @@ class WifiState:
             if connected
             else ICONS["state"]["wifi_error"]
         )
-        if status == "Checking":
-            status_label = "Checking"
-            status_asset = ICONS["status"]["sync"]
-            state_asset = None
-        display.begin_screen("Wi-Fi", status_label, status_asset)
+
         if state_asset:
             display.draw_asset(state_asset, STATE_ART_X, STATE_ART_Y)
         status_color = COLOR_TEXT
