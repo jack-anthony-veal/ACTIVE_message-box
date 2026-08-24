@@ -4,6 +4,37 @@ This pack contains **45 raw, headerless RGB565 `.bin` assets** extracted from th
 
 The original sheet grid and panel backgrounds were removed to a solid `0x0000` black matte. This matches the dark UI background and avoids visible grid rectangles. Raw RGB565 does not carry transparency.
 
+## Using icons in code
+
+Import the semantic icon-name dictionary from the registry:
+
+```python
+from assets.registry import ICONS
+
+ICONS["menu"]["wifi"]
+ICONS["navigation"]["back"]
+ICONS["status"]["wifi_4"]
+```
+
+Pass an icon name to the display helpers; `ASSETS` remains the source of its path and dimensions:
+
+```python
+display.draw_asset(ICONS["status"]["wifi_4"], x, y)
+
+display.draw_menu_row(
+    row,
+    "Wi-Fi",
+    icon=ICONS["menu"]["wifi"],
+)
+```
+
+To discover the available categories and menu icons:
+
+```python
+print(ICONS.keys())
+print(ICONS["menu"].keys())
+```
+
 ## Fixed 240×320 layout
 
 | Region | Rectangle `(x, y, w, h)` | Rule |

@@ -47,6 +47,69 @@ ASSETS = {
 }
 
 
+ICONS = {
+    "menu": {
+        "home": "menu_home",
+        "messages": "menu_messages",
+        "messages_selected": "menu_messages_selected",
+        "presets": "menu_presets",
+        "presets_selected": "menu_presets_selected",
+        "settings": "menu_settings",
+        "settings_selected": "menu_settings_selected",
+        "account": "menu_account",
+        "device": "menu_device",
+        "wifi": "menu_wifi",
+        "graphics": "menu_graphics",
+    },
+    "navigation": {
+        "back": "nav_back",
+        "edit": "nav_change_edit",
+        "select": "nav_enter_select",
+        "send": "nav_send",
+    },
+    "action": {
+        "connected": "action_connected",
+        "disconnected": "action_disconnected",
+        "delete": "action_delete",
+        "info": "action_info",
+        "keyboard": "action_keyboard",
+        "add": "action_plus_add",
+        "power": "action_power",
+        "question": "action_question",
+        "refresh": "action_refresh_scan",
+        "scroll": "action_scroll",
+    },
+    "status": {
+        "alert": "status_alert",
+        "battery": "status_battery",
+        "lock": "status_lock",
+        "sync": "status_sync",
+        "wifi_0": "status_wifi_0",
+        "wifi_1": "status_wifi_1",
+        "wifi_2": "status_wifi_2",
+        "wifi_3": "status_wifi_3",
+        "wifi_4": "status_wifi_4",
+        "wifi_error": "status_wifi_error",
+    },
+    "state": {
+        "loading_message": "state_loading_message",
+        "loading_presets": "state_loading_presets",
+        "sending": "state_sending",
+        "success": "state_success",
+        "http_error": "state_http_error",
+        "device_error": "state_device_error",
+        "software_error": "state_software_error",
+        "wifi_error": "state_wifi_error",
+        "wifi_success": "state_wifi_success",
+        "generic_error": "state_generic_error",
+    },
+}
+
+
+def icon(category, name):
+    return ICONS[category][name]
+
+
 REGIONS = {
     "status": (0, 0, 240, 24),
     "title": (0, 24, 240, 32),

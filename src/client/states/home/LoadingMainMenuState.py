@@ -1,13 +1,10 @@
-from config.config import IF_MESSAGE_NONE_DISP
+from assets.registry import ICONS
+from config.config import (
+    APP_FLAG_NON_FATAL_API, APP_FLAG_NON_FATAL_STORAGE, ERROR_HTTP_GET,
+    ERROR_STORAGE_READ, IF_MESSAGE_NONE_DISP,
+)
 from states.home.MainMenuState import MainMenuCycleState
 from states.NotifyState import ErrorState
-
-_OTHER = 1 << 0
-_NON_FATAL_API = 1 << 1
-_NON_FATAL_WIFI= 1 << 2
-_NON_FATAL_HTTP= 1 << 3
-_NON_FATAL = 1 << 4
-
 
 class LoadingMainMenuState:
     def __init__(self, app):
@@ -41,17 +38,25 @@ class LoadingMainMenuState:
                     message = self.app.storage.read_display_data().get("message")
 
                 except Exception as storage_error:
-                    if not self.app.flags & _NON_FATAL:
-                        self.app.flags |= _NON_FATAL
-                        self.app.state_manager.replace_state(state=ErrorState(self.app, str(storage_error), 22))
+                    if not self.app.flags & APP_FLAG_NON_FATAL_STORAGE:
+                        self.app.flags |= APP_FLAG_NON_FATAL_STORAGE
+                        self.app.state_manager.replace_state(
+                            state=ErrorState(
+                                self.app,
+                                str(storage_error),
+                                ERROR_STORAGE_READ,
+                            )
+                        )
                         message = None
                         return
 
         except Exception as error:
             print("Message loading error:", error)
-            if not self.app.flags & _NON_FATAL_API:
-                self.app.flags |= _NON_FATAL_API
-                self.app.state_manager.replace_state(state=ErrorState(self.app, str(error), 12))
+            if not self.app.flags & APP_FLAG_NON_FATAL_API:
+                self.app.flags |= APP_FLAG_NON_FATAL_API
+                self.app.state_manager.replace_state(
+                    state=ErrorState(self.app, str(error), ERROR_HTTP_GET)
+                )
                 message = None
                 return
 
@@ -63,4 +68,6 @@ class LoadingMainMenuState:
 
     def draw(self):
         self.app.display.power_on()
-        self.app.display.draw_loading("Loading messages", "state_loading_message")
+        self.app.display.draw_loading(
+            "Loading messages", ICONS["state"]["loading_message"]
+        )

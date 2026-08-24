@@ -1,54 +1,45 @@
 import gc
-import sys
-import time
-import esp
 import network
-import esp32
-from config.config import *
-from start_up.tests import *
+
+from config.config import (
+    WIFI_BOOT_CONNECT_TIMEOUT_S, WIFI_PASSWORD, WIFI_SSID,
+)
 from hardware_devices.input_device import OnSwitch
+from libraries.utils.wifi import connect
+from start_up.tests import get_reset_reason
 
-switch = OnSwitch()
-wake_pins = switch.wake_up_pins
-del switch
 
-# Trigger level: WAKEUP_ALL_LOW wakes up if ANY pin in the tuple drops to LOW
-sys.path.append('config')
-print(str(get_reset_reason()))
-gc.collect()
+wake_pins = OnSwitch().wake_up_pins
 
 
 def wifi_stats():
-    station = network.WLAN(network.STA_IF)
-    if station.isconnected():
-        return True
-    else: return False
+    return network.WLAN(network.STA_IF).isconnected()
 
 
 def connect_wifi():
-    gc.collect()
-    esp.osdebug(None)
-    station = network.WLAN(network.STA_IF)  # Create a net status class
-    station.active(False)
-    time.sleep_ms(20)
-    station.active(True)
-    station.disconnect()
-    time.sleep_ms(20)
-
     try:
-        station.connect(WIFI_SSID, WIFI_PASSWORD)
-    except Exception as error:
-        print(error)
-    timeout = 20
+        import esp
 
-    while not station.isconnected() and timeout > 0:
-        timeout -= 1
-        time.sleep_ms(500)
+        esp.osdebug(None)
+    except (ImportError, AttributeError):
+        pass
 
-    if station.isconnected():
+    station = network.WLAN(network.STA_IF)
+    try:
+        connected = connect(
+            station,
+            WIFI_SSID,
+            WIFI_PASSWORD,
+            WIFI_BOOT_CONNECT_TIMEOUT_S,
+        )
+    except OSError as error:
+        print("Wi-Fi connection error:", error)
+        return False
+
+    if connected:
         print("connected")
-    else:
-        return
+    return connected
 
 
-#connect_wifi()
+print(str(get_reset_reason()))
+gc.collect()

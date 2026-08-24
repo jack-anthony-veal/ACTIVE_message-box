@@ -14,19 +14,22 @@ PUT / DELETE
 """
 
 import json
+import os
 from pathlib import Path
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 app = FastAPI()
 
-SECRET = "password"
-DATA = Path("data")
+SECRET = os.environ.get("MESSAGE_BOX_TOKEN")
+HOST_ROOT = Path(__file__).resolve().parent
+DATA = HOST_ROOT / "data"
 DATA.mkdir(exist_ok=True)
 
 PRESETS_FILE = DATA / "presets.json"
+INDEX_FILE = HOST_ROOT / "static" / "index.html"
 PEOPLE = {"jack", "ella"}
 MAX_PRESETS = 5
 DISPLAY_COLS = 27
@@ -42,14 +45,20 @@ class Preset(BaseModel):
 
 
 def check_token(box_token: str | None):
-    if box_token != SECRET:
-        raise HTTPException(status_code=401, detail="Bad token")
+    if SECRET is None or box_token != SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Bad token",
+        )
 
 
 def check_person(person: str):
     person = person.lower()
     if person not in PEOPLE:
-        raise HTTPException(status_code=404, detail="Unknown person")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Unknown person",
+        )
     return person
 
 
@@ -75,7 +84,10 @@ def clean_preset(text: str):
     text = text.replace("\r\n", "\n").replace("\r", "\n").strip()
 
     if text == "":
-        raise HTTPException(status_code=400, detail="Preset cannot be empty")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Preset cannot be empty",
+        )
 
     rows_used = 0
     for line in text.split("\n"):
@@ -83,8 +95,10 @@ def clean_preset(text: str):
 
     if rows_used > DISPLAY_ROWS:
         raise HTTPException(
-            status_code=400,
-            detail="Preset must fit the 240x320 display: max 27 chars x 10 lines",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Preset must fit the 240x320 display: max {} chars x {} lines".format(
+                DISPLAY_COLS, DISPLAY_ROWS
+            ),
         )
 
     return text
@@ -92,7 +106,7 @@ def clean_preset(text: str):
 
 @app.get("/")
 def home():
-    return FileResponse("index.html")
+    return FileResponse(INDEX_FILE)
 
 
 @app.post("/send/{person}")
@@ -137,10 +151,16 @@ def add_preset(person: str, preset: Preset, box_token: str | None = Header(defau
     data = load_presets()
 
     if len(data[person]) >= MAX_PRESETS:
-        raise HTTPException(status_code=400, detail="Maximum 5 presets")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Maximum {} presets".format(MAX_PRESETS),
+        )
 
     if text in data[person]:
-        raise HTTPException(status_code=400, detail="Preset already exists")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Preset already exists",
+        )
 
     data[person].append(text)
     save_presets(data)
@@ -160,10 +180,16 @@ def edit_preset(
     data = load_presets()
 
     if index < 0 or index >= len(data[person]):
-        raise HTTPException(status_code=404, detail="Preset not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Preset not found",
+        )
 
     if text in data[person] and data[person][index] != text:
-        raise HTTPException(status_code=400, detail="Preset already exists")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Preset already exists",
+        )
 
     data[person][index] = text
     save_presets(data)
@@ -177,7 +203,10 @@ def delete_preset(person: str, index: int, box_token: str | None = Header(defaul
     data = load_presets()
 
     if index < 0 or index >= len(data[person]):
-        raise HTTPException(status_code=404, detail="Preset not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Preset not found",
+        )
 
     removed = data[person].pop(index)
     save_presets(data)

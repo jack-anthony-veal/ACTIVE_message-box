@@ -421,3 +421,75 @@ Hardware validation still required:
 
 Remaining:
 - No code or display-driver blocker remains. The production application is running.
+
+## Stage 13 — restore Settings ownership and add semantic icon aliases
+
+Files changed:
+- `src/client/assets/registry.py`
+- `src/client/assets/ASSET_LAYOUT.md`
+- `src/client/states/proc/base_display.py`
+- `src/client/states/settings/settings_navigate.py`
+- `src/tests/display_migration_tests.py`
+- `src/tests/full_local_tests.py`
+- `DISPLAY_MIGRATION_LOG.md`
+
+Changes:
+- Moved the Settings title, labels, icons, visible-row rendering loop, and navigation rendering into `SettingsNav`, following the ownership pattern in `MainMenuCycleState`.
+- Kept a callable `BaseScroll` controller instance owned by `SettingsNav`; the controller provides only generic index normalization and visible-window positions and has no knowledge of Settings content, icons, or display rendering.
+- Added `ICONS` as a semantic category/name-to-asset-key reference covering all 45 current `ASSETS` entries without copying paths, dimensions, coordinates, or bitmap data.
+- Updated Settings to select its menu and navigation icons through `ICONS` and documented the lookup pattern.
+
+Validation:
+- `python3 -B src/tests/display_migration_tests.py`: 24 passed, including alias validity, category-prefix, complete-coverage, and uniqueness checks.
+- Focused `SettingsNav` ownership/visible-window and generic `BaseScroll` tests: 2 passed.
+- Syntax/import coverage for the changed state modules passed as part of the host tests.
+- Static ownership search found none of the forbidden Settings-specific terms in `states/proc/base_display.py`.
+- The repeated legacy audit found no `SH1106`, `sh1106`, `.oled`, or `framebuf` references and no old character-count wrapping helper. Remaining `64` references are intentional 64×64 state-art dimensions or diagnostic geometry; the remaining `128` reference is an icon-spacing assertion. Bytes/bytearray uses are runtime text and buffer handling, not duplicate bitmap payloads.
+- The broader local suite passed 30 tests and retained one unrelated error from the pre-existing `src/client/app/app.py` wildcard import, where `StateNavigator` resolves to a module during `App()` construction.
+
+Hardware validation still required:
+- None for this architecture and registry-reference-only change.
+
+Remaining:
+- The unrelated `App()` construction failure in the user's existing `src/client/app/app.py` changes remains outside this stage's scope.
+
+## Stage 14 — final maintainability and ownership cleanup
+
+Files changed:
+- `src/client/config/config.py` and all client config callers
+- `src/client/assets/registry.py`, `src/client/assets/ASSET_LAYOUT.md`
+- `src/client/hardware_devices/`
+- `src/client/states/`, `src/client/app/`, `src/client/boot.py`, `src/client/main.py`
+- `src/client/libraries/config.py`, `src/client/libraries/utils/wifi.py`
+- `src/client/start_up/tests.py`, diagnostics, local tests, host API, and developer documentation
+
+Changes:
+- Consolidated shared firmware constants into `config/config.py`; removed the split UI, display, and GPIO config modules and all wildcard config imports.
+- Kept `ASSETS` authoritative for paths/dimensions and added a unique 45-entry semantic `ICONS` catalogue with no copied metadata.
+- Kept `BaseScroll` calculation-only, kept Display drawing-only, and made Settings own its five labels, icons, selection, visible-row rendering, controller instance, and transitions.
+- Restored the Settings Edit/Back encoder meaning and fixed the broken `app.state_struct` Wi-Fi transition.
+- Centralized encoder, API, display, menu, keyboard, Wi-Fi, timing, storage, state-index, and error-code literals under semantic names.
+- Centralized Wi-Fi reset/connect/poll mechanics in one helper without moving UI/navigation into it.
+- Fixed `Config.write()`, storage read/write error labeling and preset fallback shape, canonical StateNavigator imports, App construction, host static-file resolution, and host token handling.
+- Compared runtime entry points with `origin/main` and restored the configured `OnSwitch` wake-pin wrapper plus `boot.wifi_stats()` and `boot.connect_wifi()`; the latter delegates to the single shared Wi-Fi helper.
+- Removed verified duplicate, placeholder, compatibility, debug, cache, IDE, archive, and obsolete helper files. The real local network credential file is ignored and untracked; `network.example.ini` documents the format.
+
+Validation:
+- `python -m compileall -q src`: passed.
+- `python3 -B src/tests/display_migration_tests.py`: 28 passed.
+- `python3 -B src/tests/full_local_tests.py`: 33 passed, including the restored `origin/main` boot compatibility entry points.
+- `python3 -B src/tests/host_tests.py`: 12 passed.
+- `python3 -B src/tests/host_api_tests.py`: 3 passed.
+- `python3 -B src/tests/service_edge_tests.py`: 8 passed.
+- `python3 -B src/tests/current_regression_tests.py`: 5 passed.
+- `python3 -B src/tests/ui_asset_diagnostics.py`: all 59 placements reported valid.
+- Static audits found one canonical config import style, one StateNavigator, one Wi-Fi mechanics implementation, no duplicate action-icon dictionary, no forbidden Settings terms in BaseScroll, and no active SH1106/framebuffer references.
+- Registry audit: 45 assets, 45 aliases, 45 unique alias values, with no missing or uncovered assets.
+- `git diff --check`: passed. Generated bytecode was removed again after local compilation/testing.
+- `mpremote` was not used; no ESP32 was connected, flashed, erased, or queried.
+
+Hardware validation still required:
+- No new hardware check was attempted. The existing physical ST7789 migration remains unchanged; encoder/button behavior and any new Wi-Fi credential flow should be confirmed on-device when hardware testing is next authorized.
+
+Remaining:
+- None for the local maintainability/refactor scope.

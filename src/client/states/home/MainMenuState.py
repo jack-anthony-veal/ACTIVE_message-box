@@ -1,4 +1,8 @@
-from config import BUTTON_PRESS, RIGHT_DIAL, LEFT_DIAL
+from assets.registry import ICONS
+from config.config import (
+    BUTTON_PRESS, HOME_PRESETS_INDEX, HOME_SETTINGS_INDEX, LEFT_DIAL,
+    RIGHT_DIAL,
+)
 from states.presets.LoadingPresetsState import LoadingPresetsState
 from states.settings.settings_navigate import SettingsNav
 
@@ -12,7 +16,16 @@ class MainMenuCycleState:
             "Open saved message presets",
             "Device and network settings",
         ]
-        self.icons = ("menu_messages", "menu_presets", "menu_settings")
+        self.icons = (
+            ICONS["menu"]["messages"],
+            ICONS["menu"]["presets"],
+            ICONS["menu"]["settings"],
+        )
+        self.selected_icons = (
+            ICONS["menu"]["messages_selected"],
+            ICONS["menu"]["presets_selected"],
+            ICONS["menu"]["settings_selected"],
+        )
         self.running = False
         self.current_index = 0
         self.index_updated = True
@@ -29,9 +42,9 @@ class MainMenuCycleState:
         if event is None or event_type is None:
             return
         if event_type == BUTTON_PRESS:
-            if self.current_index == 1:
+            if self.current_index == HOME_PRESETS_INDEX:
                 self.app.state_manager.push_state(LoadingPresetsState(self.app))
-            elif self.current_index == 2:
+            elif self.current_index == HOME_SETTINGS_INDEX:
                 self.app.state_manager.push_state(SettingsNav(self.app))
             return
         if event in (RIGHT_DIAL, LEFT_DIAL):
@@ -52,13 +65,17 @@ class MainMenuCycleState:
                 selected=index == self.current_index,
                 subtitle=self.previews[index],
                 icon=self.icons[index],
-                selected_icon=self.icons[index] + "_selected",
+                selected_icon=self.selected_icons[index],
             )
-        right = "Open" if self.current_index in (1, 2) else ""
+        right = (
+            "Open"
+            if self.current_index in (HOME_PRESETS_INDEX, HOME_SETTINGS_INDEX)
+            else ""
+        )
         display.draw_nav_bar(
             left="Rotate", right=right,
-            left_icon="action_scroll",
-            right_icon="nav_enter_select" if right else None,
+            left_icon=ICONS["action"]["scroll"],
+            right_icon=ICONS["navigation"]["select"] if right else None,
         )
         self.index_updated = False
 

@@ -1,5 +1,8 @@
-from config import DIAL_EVENT, BUTTON_PRESS
-from config.ui_config import CONTENT_BOTTOM, CONTENT_TOP, SCREEN_MARGIN, SCREEN_WIDTH
+from assets.registry import ICONS
+from config.config import (
+    BUTTON_PRESS, CONTENT_BOTTOM, CONTENT_TOP, DIAL_EVENT, LINE_HEIGHT,
+    SCREEN_MARGIN, SCREEN_WIDTH,
+)
 from states.presets.PresetInteract import PresetInteract
 
 
@@ -22,13 +25,14 @@ class PresetMenu:
         display.draw_text_block(
             self.preset_data_select,
             SCREEN_MARGIN,
-            CONTENT_TOP + 20,
+            CONTENT_TOP + LINE_HEIGHT,
             SCREEN_WIDTH - SCREEN_MARGIN * 2,
             bottom=CONTENT_BOTTOM,
         )
         display.draw_nav_bar(
             left="Rotate", right="Choose",
-            left_icon="action_scroll", right_icon="nav_enter_select",
+            left_icon=ICONS["action"]["scroll"],
+            right_icon=ICONS["navigation"]["select"],
         )
         self.needs_draw = False
 

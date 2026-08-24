@@ -1,105 +1,69 @@
-from micropython import const
 import time
+
 import network
-import ujson as json
-from libraries.utils.menutools import MenuTools
+from micropython import const
+
+from assets.registry import ICONS
+from config.config import (
+    BUTTON_PRESS as BUTTON_EVENT, COLOR_ERROR, COLOR_SUCCESS, CONTENT_BOTTOM,
+    CONTENT_TOP, DIAL_EVENT, NAV_LEFT_INDEX, NAV_RIGHT_INDEX,
+    NETWORK_CONFIG_FILE, SCREEN_MARGIN, SCREEN_WIDTH, STATE_ART_X,
+    STATE_ART_Y, STATE_TEXT_FALLBACK_OFFSET_Y, STATE_TEXT_Y,
+    WIFI_CONNECT_TIMEOUT_S, WIFI_FAILURE_DISPLAY_MS, WIFI_NEW_NETWORK_TIMEOUT_S,
+    WIFI_PASSWORD, WIFI_RESULT_DISPLAY_MS, WIFI_SCAN_RSSI_INDEX,
+    WIFI_SCAN_SECURITY_INDEX, WIFI_SCAN_SSID_INDEX, WIFI_SSID,
+    WIFI_VISIBLE_ROWS,
+)
 from libraries.config import Config
+from libraries.utils.wifi import connect, reset_interface, signal_level
 from states.keyboard import Keyboard
-from config.ui_config import (
-    COLOR_ERROR, COLOR_SUCCESS, CONTENT_BOTTOM, CONTENT_TOP,
-    SCREEN_MARGIN, SCREEN_WIDTH, STATE_ART_X, STATE_ART_Y, STATE_TEXT_Y,
-)
 
-try:
-    import config.config as _config
-except ImportError:
-    import config as _config
-
-DIAL_EVENT = _config.DIAL_EVENT
-BUTTON_EVENT = _config.BUTTON_PRESS
-WIFI_SSID = getattr(_config, "WIFI_SSID", "")
-WIFI_PASSWORD = getattr(
-    _config,
-    "WIFI_PASSWORD",
-    getattr(_config, "WIFI_PASS", ""),
-)
 
 _LIST_DIRTY = const(1 << 0)
 _MENU_DIRTY = const(1 << 1)
-
 _MAIN_SELECTED = const(1 << 0)
 _MENU_SELECTED = const(1 << 1)
+_ACTION_ENTER = const(0)
+_ACTION_BACK = const(1)
 
-_MAX_DISPLAY_LIST = const(5)
-import os
 
 class WifiSettings:
     def __init__(self, app):
-        self.return_kb_buffer = bytearray()
-        self.selected_ssid_buffer = bytearray()
-        
         self.app = app
-
         self.station = network.WLAN(network.STA_IF)
         self.saved_ssid = WIFI_SSID
-        self.saved_pass = WIFI_PASSWORD
-        
+
+        self.return_kb_buffer = bytearray()
+        self.selected_ssid_buffer = bytearray()
         self.networks = []
-        self.list_max_display = _MAX_DISPLAY_LIST
 
         self.current_index = None
         self.menu_index = None
-
         self.main_flag = _MAIN_SELECTED
         self.menu_flag = 0
         self.dirty = _LIST_DIRTY | _MENU_DIRTY
 
-        self.menu_tools = MenuTools(self.app)
+        self.actions = ("Enter", "Back")
+        self.action_icons = (
+            ICONS["navigation"]["select"],
+            ICONS["navigation"]["back"],
+        )
+
     def enter_state(self):
         self.app.display.begin_screen(
-            "Wi-Fi networks", "Scanning", ("status_wifi_0", "status_sync")
+            "Wi-Fi networks",
+            "Scanning",
+            (ICONS["status"]["wifi_0"], ICONS["status"]["sync"]),
         )
         errors = []
-        station = self.station
-        station.active(False)
-        time.sleep_ms(20)
-        station.active(True)
-        station.disconnect()
-        time.sleep_ms(20)
-        scanned_networks = ()
-
         try:
-            scanned_networks = station.scan()
-        except Exception as err:
-            errors.append("scan: " + str(err))
+            reset_interface(self.station)
+            scanned_networks = self.station.scan()
+        except Exception as error:
+            scanned_networks = ()
+            errors.append("scan: " + str(error))
 
-        self.networks = []
-        seen_ssids = set()
-
-        for network_info in scanned_networks:
-            try:
-                raw_ssid = network_info[0]
-                try:
-                    ssid = raw_ssid.decode()
-                except Exception:
-                    ssid = str(raw_ssid)
-
-                if not ssid:
-                    ssid = "<hidden>"
-
-                if ssid in seen_ssids:
-                    continue
-
-                seen_ssids.add(ssid)
-                rssi = int(network_info[3])
-                security = int(network_info[4])
-                self.networks.append((ssid, rssi, security))
-
-            except (IndexError, TypeError, ValueError) as err:
-                errors.append("network entry: " + str(err))
-
-        self.networks.sort(key=lambda item: item[1], reverse=True)
-
+        self.networks = self._normalise_networks(scanned_networks, errors)
         self.current_index = 0 if self.networks else None
         self.menu_index = None
         self.main_flag = _MAIN_SELECTED
@@ -108,15 +72,49 @@ class WifiSettings:
 
         if errors:
             print("Wi-Fi scan warnings: " + " | ".join(errors))
-
         self.draw()
 
-    def _draw_borders(self):
-        return
+    @staticmethod
+    def _normalise_networks(scanned_networks, errors):
+        networks = []
+        seen_ssids = set()
+        for network_info in scanned_networks:
+            try:
+                raw_ssid = network_info[WIFI_SCAN_SSID_INDEX]
+                try:
+                    ssid = raw_ssid.decode()
+                except Exception:
+                    ssid = str(raw_ssid)
+                if not ssid:
+                    ssid = "<hidden>"
+                if ssid in seen_ssids:
+                    continue
+                seen_ssids.add(ssid)
+                networks.append((
+                    ssid,
+                    int(network_info[WIFI_SCAN_RSSI_INDEX]),
+                    int(network_info[WIFI_SCAN_SECURITY_INDEX]),
+                ))
+            except (IndexError, TypeError, ValueError) as error:
+                errors.append("network entry: " + str(error))
+        networks.sort(key=lambda item: item[1], reverse=True)
+        return networks
 
-    def _menu(self):
-        selected = self.menu_index if self.menu_flag & _MENU_SELECTED else None
-        self.menu_tools._draw_selected(selected, "enter", "back")
+    def _draw_actions(self):
+        selected = None
+        if self.menu_flag & _MENU_SELECTED:
+            selected = (
+                NAV_RIGHT_INDEX
+                if self.menu_index == _ACTION_ENTER
+                else NAV_LEFT_INDEX
+            )
+        self.app.display.draw_nav_bar(
+            left=self.actions[_ACTION_BACK],
+            right=self.actions[_ACTION_ENTER],
+            selected=selected,
+            left_icon=self.action_icons[_ACTION_BACK],
+            right_icon=self.action_icons[_ACTION_ENTER],
+        )
 
     def _draw_network_list(self):
         display = self.app.display
@@ -126,216 +124,230 @@ class WifiSettings:
             display.draw_text_block(
                 "No networks found",
                 SCREEN_MARGIN,
-                CONTENT_TOP + 32,
+                CONTENT_TOP + STATE_TEXT_FALLBACK_OFFSET_Y,
                 SCREEN_WIDTH - SCREEN_MARGIN * 2,
                 bottom=CONTENT_BOTTOM,
             )
-            self.networks.append(("Go, back", "X", "X"))
             return
 
         first = 0 if self.current_index is None else self.current_index
-        visible_count = min(self.list_max_display, len(self.networks))
-
-        for row_index in range(self.list_max_display):
-            if row_index >= visible_count:
-                continue
-
+        visible_count = min(WIFI_VISIBLE_ROWS, len(self.networks))
+        for row_index in range(visible_count):
             network_index = (first + row_index) % len(self.networks)
             ssid, rssi, security = self.networks[network_index]
-
-            is_selected = (
-                row_index == 0 and bool(self.main_flag & _MAIN_SELECTED)
-            )
-            display.draw_wifi_row(
-                row_index, str(ssid), rssi, security, selected=is_selected
+            rssi_value, bars = signal_level(rssi)
+            display.draw_list_row(
+                row_index,
+                str(ssid),
+                subtitle="secured" if security else "open",
+                selected=(
+                    row_index == 0 and bool(self.main_flag & _MAIN_SELECTED)
+                ),
+                icon=ICONS["status"]["wifi_" + str(bars)],
+                secondary_icon=(
+                    ICONS["status"]["lock"]
+                    if str(ssid) == "<hidden>" or security
+                    else None
+                ),
+                trailing_text=str(rssi_value),
             )
 
     def _select_current_network(self):
         if self.current_index is None or not self.networks:
-            return
+            return False
 
         ssid, rssi, security = self.networks[self.current_index]
         self.saved_ssid = ssid
-
         callback = getattr(self.app, "on_wifi_network_selected", None)
         if callback is not None:
             callback(ssid, rssi, security)
         else:
-            print("Selected Wi-Fi: " + ssid)
-            txt = map(ord, ssid)                
-            self.selected_ssid_buffer.extend(txt)
-            return
-
-    def _go_back(self):
-        callback = getattr(self.app, "on_wifi_back", None)
-        if callback is not None:
-            callback()
-        else:
-            print("Back selected")
+            self.selected_ssid_buffer.extend(ssid.encode("utf-8"))
+        return True
 
     def update(self):
         return
 
-    def handle_input(self, event, type_):
-        if type_ is None or event is None:
+    def handle_input(self, event, event_type):
+        if event_type is None or event is None:
             return
 
-        if type_ == DIAL_EVENT:
+        if event_type == DIAL_EVENT:
             if self.main_flag & _MAIN_SELECTED:
                 if not self.networks:
                     return
-
                 current = 0 if self.current_index is None else self.current_index
                 self.current_index = (current + event) % len(self.networks)
                 self.dirty |= _LIST_DIRTY
-
             elif self.menu_flag & _MENU_SELECTED:
                 current = 0 if self.menu_index is None else self.menu_index
-                self.menu_index = (current + event) % 2
+                self.menu_index = (current + event) % len(self.actions)
                 self.dirty |= _MENU_DIRTY
-                
-
             self.draw()
             return
 
-        if type_ != BUTTON_EVENT:
+        if event_type != BUTTON_EVENT:
             return
 
         if self.main_flag & _MAIN_SELECTED:
             if not self.networks:
+                self.app.state_manager.pop_state()
                 return
-
             self.main_flag = 0
             self.menu_flag = _MENU_SELECTED
-            self.menu_index = 0
+            self.menu_index = _ACTION_ENTER
             self.dirty |= _LIST_DIRTY | _MENU_DIRTY
             self.draw()
             return
 
         if self.menu_flag & _MENU_SELECTED:
-            selected = 0 if self.menu_index is None else self.menu_index
-
+            selected = (
+                _ACTION_ENTER if self.menu_index is None else self.menu_index
+            )
             self.menu_flag = 0
             self.main_flag = _MAIN_SELECTED
             self.menu_index = None
             self.dirty |= _LIST_DIRTY | _MENU_DIRTY
             self.draw()
 
-            if selected == 0:
-                self._select_current_network()
-                self.connecting = Connecting(self.app, self.return_kb_buffer, self.selected_ssid_buffer)
-                self.app.state_manager.replace_state(Keyboard(self.app, self.connecting, self.return_kb_buffer, self.saved_ssid))
-                return
-                
-            else:
+            if selected == _ACTION_ENTER and self._select_current_network():
+                connecting = Connecting(
+                    self.app,
+                    self.return_kb_buffer,
+                    self.selected_ssid_buffer,
+                )
+                self.app.state_manager.replace_state(
+                    Keyboard(
+                        self.app,
+                        connecting,
+                        self.return_kb_buffer,
+                        self.saved_ssid,
+                    )
+                )
+            elif selected == _ACTION_BACK:
                 self.app.state_manager.pop_state()
-                return
 
     def draw(self):
         if self.dirty == 0:
             return
-
         if self.dirty & _LIST_DIRTY:
             self._draw_network_list()
-
         if self.dirty & _MENU_DIRTY:
-            self._menu()
-
+            self._draw_actions()
         self.dirty = 0
-            
+
     def exit_state(self):
         return
-    
-    
+
+
 class Connecting:
     def __init__(self, app, return_buf, ssid_buf):
         self.app = app
         self.pass_buf = return_buf
         self.ssid_buf = ssid_buf
         self.station = network.WLAN(network.STA_IF)
-        self.config_func = Config()
-        self.pass_ = ""
-        self.ssid_ = ""
-        
+        self.password = ""
+        self.ssid = ""
+
     def enter_state(self):
-        self.pass_ =self.pass_buf.decode('utf-8')
-        self.ssid_ = self.ssid_buf.decode('utf-8')
-        print(self.pass_ + self.ssid_)
+        self.password = self.pass_buf.decode("utf-8")
+        self.ssid = self.ssid_buf.decode("utf-8")
         self.draw()
-        
+
     def update(self):
         return
-    
+
     def draw(self):
         display = self.app.display
-        display.begin_screen("Connecting", "Wi-Fi", "status_sync")
+        display.begin_screen(
+            "Connecting", "Wi-Fi", ICONS["status"]["sync"]
+        )
         display.draw_text_block(
-            self.ssid_, SCREEN_MARGIN, CONTENT_TOP + 40,
+            self.ssid,
+            SCREEN_MARGIN,
+            CONTENT_TOP + STATE_TEXT_FALLBACK_OFFSET_Y,
             SCREEN_WIDTH - SCREEN_MARGIN * 2,
         )
-    
-        self.station.active(False)
-        time.sleep_ms(20)
-        self.station.active(True)
-        self.station.disconnect()
-        time.sleep_ms(20)
-        self.station.connect(self.ssid_, self.pass_)
-        timeout = 10
-        
-        while not self.station.isconnected() and timeout > 0:
-            timeout -= 1
-            time.sleep_ms(1000)
 
-        if not self.station.isconnected():
-            connectionError = "Cant connect to hidden nets" if self.ssid_.lower() == "<hidden>" else "couldnt connect"
-            display.begin_screen("Connection failed", "Error", "status_wifi_error")
-            display.draw_asset("state_wifi_error", STATE_ART_X, STATE_ART_Y)
-            display.draw_text_block(
-                connectionError, SCREEN_MARGIN, STATE_TEXT_Y,
-                SCREEN_WIDTH - SCREEN_MARGIN * 2, color=COLOR_ERROR,
+        try:
+            connected = connect(
+                self.station,
+                self.ssid,
+                self.password,
+                WIFI_NEW_NETWORK_TIMEOUT_S,
             )
-            time.sleep(3)
+        except OSError:
+            connected = False
+
+        if connected:
+            self._show_success(display)
+        else:
+            self._show_failure(display)
+
+        self.app.state_manager.replace_state(WifiSettings(self.app))
+
+    def _show_failure(self, display):
+        message = (
+            "Cannot connect to hidden networks"
+            if self.ssid.lower() == "<hidden>"
+            else "Could not connect"
+        )
+        display.begin_screen(
+            "Connection failed", "Error", ICONS["status"]["wifi_error"]
+        )
+        display.draw_asset(
+            ICONS["state"]["wifi_error"], STATE_ART_X, STATE_ART_Y
+        )
+        display.draw_text_block(
+            message,
+            SCREEN_MARGIN,
+            STATE_TEXT_Y,
+            SCREEN_WIDTH - SCREEN_MARGIN * 2,
+            color=COLOR_ERROR,
+        )
+        time.sleep_ms(WIFI_FAILURE_DISPLAY_MS)
+
+        if WIFI_SSID:
             try:
-                self.station.connect(WIFI_SSID, WIFI_PASSWORD) # TODO: make config load from ini in boot
-                
-                
-            except Exception as FatalConnErr:
+                connect(
+                    self.station,
+                    WIFI_SSID,
+                    WIFI_PASSWORD,
+                    WIFI_CONNECT_TIMEOUT_S,
+                )
+            except OSError:
                 display.begin_screen("Connection failed", "Error")
                 display.draw_text_block(
                     "Cannot reconnect with saved credentials",
                     SCREEN_MARGIN,
-                    CONTENT_TOP + 32,
+                    CONTENT_TOP + STATE_TEXT_FALLBACK_OFFSET_Y,
                     SCREEN_WIDTH - SCREEN_MARGIN * 2,
                     color=COLOR_ERROR,
                 )
-                time.sleep(5)
-                
-        
-        else:
-            display.begin_screen("Connected", "Wi-Fi", "status_wifi_4")
-            display.draw_asset("state_wifi_success", STATE_ART_X, STATE_ART_Y)
-            display.draw_text_block(
-                "Saving network settings",
-                SCREEN_MARGIN,
-                STATE_TEXT_Y,
-                SCREEN_WIDTH - SCREEN_MARGIN * 2,
-                color=COLOR_SUCCESS,
-            )
-            
-            
-            self.ssid_ = self.config_func.format(self.ssid_)
-            self.pass_ = self.config_func.format(self.pass_)
-            data = {"login":{"ssid": self.ssid_, "pass": self.pass_}}
-            self.config_func.write("./config/network.ini", data)
-            
-            
-            check_data = self.config_func.read("./config/network.ini")
-            print(str(check_data))
-            time.sleep(5)
-            
-        self.app.state_manager.replace_state(WifiSettings(self.app))
-                                             
-    def handle_input(self):
+                time.sleep_ms(WIFI_RESULT_DISPLAY_MS)
+
+    def _show_success(self, display):
+        display.begin_screen(
+            "Connected", "Wi-Fi", ICONS["status"]["wifi_4"]
+        )
+        display.draw_asset(
+            ICONS["state"]["wifi_success"], STATE_ART_X, STATE_ART_Y
+        )
+        display.draw_text_block(
+            "Saving network settings",
+            SCREEN_MARGIN,
+            STATE_TEXT_Y,
+            SCREEN_WIDTH - SCREEN_MARGIN * 2,
+            color=COLOR_SUCCESS,
+        )
+        Config.write(
+            NETWORK_CONFIG_FILE,
+            {"login": {"ssid": self.ssid, "pass": self.password}},
+        )
+        time.sleep_ms(WIFI_RESULT_DISPLAY_MS)
+
+    def handle_input(self, event=None, event_type=None):
         return
+
     def exit_state(self):
         return

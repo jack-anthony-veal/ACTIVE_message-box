@@ -1,18 +1,7 @@
-# === State Navigator ===
-# Responsible for calling and effecting other states where all states inherit a specific instance of App()
-# TODO: add a boot state and a loading state
-# TODO: add a context manager here or for an app
-#  TODO: add push and close and other functionality
-
-
-class StateNavigator():
+class StateNavigator:
     def __init__(self, app):
         self.app = app
         self._state_stack = []
-        self.previous_state = None
-        self.second_state_prior = None
-        self.next_state = None
-        self.running = False
         self.start_state = None
 
     def __setattr__(self, name, value):
@@ -39,16 +28,13 @@ class StateNavigator():
         self.start_state = state
         self.push_state(state)
 
-
-    # ENTER A STATE
-    def push_state(self, state: object):
+    def push_state(self, state):
         current = self.current_state()
         if current is not None:
             current.exit_state()
         self._state_stack.append(state)
         state.enter_state()
 
-    # EXIT A STATE and ENTER prior
     def pop_state(self):
         current = self.current_state()
         if current is None:
@@ -66,11 +52,7 @@ class StateNavigator():
         state = self.start_state.__class__(self.app)
         self.start(state)
 
-
-
-    # EXIT A STATE and ENTER prior
-    # TODO: consider using replace for better menu navigation
-    def replace_state(self, state): # changes working state without exit
+    def replace_state(self, state):
         current = self.current_state()
         if current is not None:
             current.exit_state()
@@ -79,7 +61,6 @@ class StateNavigator():
         self._state_stack.append(state)
         state.enter_state()
 
-    # calls the state to handle input
     def handle_input(self, event, event_type=None):
         current = self.current_state()
         if current is not None:
@@ -94,6 +75,3 @@ class StateNavigator():
         current = self.current_state()
         if current is not None:
             current.draw()
-
-    def exit_state(self):
-        pass

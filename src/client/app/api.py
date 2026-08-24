@@ -2,10 +2,12 @@ import ujson
 import urequests as requests
 import gc
 
-from config import PRESETS_JACK_URL, NO_PRESETS_RESP, READ_ELLA_URL, SEND_JACK_URL
-from config.config import SERVER_URL, TOKEN
+from config.config import (
+    API_GET_TIMEOUT_S, API_POST_TIMEOUT_S, HTTP_SEND_SUCCESS_STATUS,
+    HTTP_SUCCESS_MAX_EXCLUSIVE, HTTP_SUCCESS_MIN, NO_PRESETS_RESP,
+    PRESETS_JACK_URL, READ_ELLA_URL, SEND_JACK_URL, TOKEN,
+)
 
-# TODO: add consts, update the server and allow for a better con management
 
 class MessageApiClient:
     def __init__(self):
@@ -17,11 +19,16 @@ class MessageApiClient:
         }
         self.error_ms = 'api error'
 
-    def get_json(self, url): # returns a dict
+    def get_json(self, url):
         session = None
         try:
-            session = requests.get(url, headers=self.headers, timeout=5)
-            if session.status_code < 200 or session.status_code >= 300:
+            session = requests.get(
+                url, headers=self.headers, timeout=API_GET_TIMEOUT_S
+            )
+            if (
+                session.status_code < HTTP_SUCCESS_MIN
+                or session.status_code >= HTTP_SUCCESS_MAX_EXCLUSIVE
+            ):
                 raise OSError("HTTP Error " + str(session.status_code))
             try:
                 return session.json()
@@ -33,11 +40,9 @@ class MessageApiClient:
                     session.close()
                 except Exception:
                     pass
-            gc.collect() # free up ram used from tls
+            gc.collect()
 
-
-# ===================== ADD HANDLER FOR 202 ERROR
-    def load_presets(self): # ALWAYS returns a list
+    def load_presets(self):
         no_presets_resp = [NO_PRESETS_RESP]
         try:
             response_data = self.get_json(PRESETS_JACK_URL)
@@ -52,13 +57,9 @@ class MessageApiClient:
             return False, no_presets_resp
 
         return True, preset_list
-
-
-    def read_new_message(self): # Returns a dict
-        url = READ_ELLA_URL
-
+    def read_new_message(self):
         try:
-            response_data = self.get_json(url)
+            response_data = self.get_json(READ_ELLA_URL)
         except Exception:
             raise Exception(self.error_ms)
 
@@ -68,19 +69,20 @@ class MessageApiClient:
         return False, {"message": None}
 
     def send_preset(self, preset_data):
-        url = SEND_JACK_URL
         session = None
-        try: # Implemented context manager to attempt to prevent timeouts
-            body = {
-                "text": preset_data
-            }
-            session = requests.post(url, headers=self.headers,data=ujson.dumps(body), timeout=30)
+        try:
+            body = {"text": preset_data}
+            session = requests.post(
+                SEND_JACK_URL,
+                headers=self.headers,
+                data=ujson.dumps(body),
+                timeout=API_POST_TIMEOUT_S,
+            )
             code = session.status_code
 
-            if code == 200:
+            if code == HTTP_SEND_SUCCESS_STATUS:
                 return True, None
-            else:
-                return False, "HTTP Error" + str(code)
+            return False, "HTTP Error" + str(code)
 
         except Exception as error:
             return False, str(error)

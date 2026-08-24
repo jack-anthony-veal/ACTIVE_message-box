@@ -194,7 +194,7 @@ from app.StateNavigator import StateNavigator
 from app.api import MessageApiClient
 from hardware_devices.display_device import Display
 from hardware_devices.input_device import Button, Dial
-from config.gpio_config import BUTTON_PIN
+from config.config import BUTTON_PIN, WAKE_PIN
 from hardware_devices.storage import Storage
 from assets.registry import ASSETS
 from libraries.utils.text_layout import layout_text
@@ -206,12 +206,17 @@ from states.NotifyState import ErrorState, Notify, add_text_to_box
 from states.keyboard import Keyboard
 from states.presets.PresetInteract import PresetInteract, SendingState
 from states.presets.PresetMenu import PresetMenu
+from states.proc.base_display import BaseScroll
+from states.settings.settings_navigate import SettingsNav
+from states.settings.WIFI import WifiState
 from start_up.tests import test_display_configuration, test_st7789_driver
 import hardware_devices.input_device as input_module
+import libraries.utils.wifi as wifi_module
 import states.keyboard as keyboard_module
 
 input_module.time = FakeClock
 keyboard_module.time = FakeClock
+wifi_module.time = FakeClock
 
 
 class RecordingDisplay:
@@ -288,6 +293,13 @@ class TestImportsAndConfig(unittest.TestCase):
     def test_st7789_readiness_checks(self):
         self.assertTrue(test_st7789_driver().passed)
         self.assertTrue(test_display_configuration().passed)
+
+    def test_origin_main_boot_compatibility_entry_points(self):
+        import boot
+
+        self.assertEqual(boot.wake_pins[0].number, WAKE_PIN)
+        self.assertTrue(boot.wifi_stats())
+        self.assertTrue(boot.connect_wifi())
 
 
 class TestNavigator(unittest.TestCase):
@@ -407,6 +419,67 @@ class TestStates(unittest.TestCase):
         self.assertEqual(menu.current_index, 1)
         menu.handle_input(-1, 4); self.assertEqual(menu.current_index, 0)
         menu.handle_input(-1, 4); self.assertEqual(menu.current_index, len(menu.options) - 1)
+
+    def test_settings_owns_content_icons_and_visible_row_rendering(self):
+        app = FakeApp()
+        settings = SettingsNav(app)
+        self.assertEqual(
+            settings.settings_menu,
+            ("Account", "Device", "Wi-Fi", "Graphics", "TBD"),
+        )
+        self.assertEqual(
+            settings.icons,
+            (
+                "menu_account",
+                "menu_device",
+                "menu_wifi",
+                "menu_graphics",
+                "action_question",
+            ),
+        )
+        self.assertEqual(len(settings.settings_menu), len(settings.icons))
+        self.assertIsInstance(settings.SETTINGS_CONTROLLER, BaseScroll)
+        self.assertTrue(callable(settings.SETTINGS_CONTROLLER))
+        self.assertEqual(
+            settings.SETTINGS_CONTROLLER.options,
+            tuple(settings.settings_menu),
+        )
+
+        settings.enter_state()
+        self.assertEqual(app.display.calls[0], ("begin_screen", ("Settings", "Rotate"), {}))
+        rows = [call for call in app.display.calls if call[0] == "draw_menu_row"]
+        self.assertEqual(
+            tuple(call[1][1] for call in rows),
+            settings.settings_menu[:4],
+        )
+        self.assertEqual([call[2]["icon"] for call in rows], list(settings.icons[:4]))
+
+        app.display.calls.clear()
+        settings.current_index = 4
+        settings.index_flag = 1
+        settings.draw()
+        rows = [call for call in app.display.calls if call[0] == "draw_menu_row"]
+        self.assertEqual([call[1][0] for call in rows], [0, 1, 2, 3])
+        self.assertEqual(
+            tuple(call[1][1] for call in rows),
+            settings.settings_menu[1:],
+        )
+        self.assertEqual([call[2]["selected"] for call in rows], [False, False, False, True])
+
+    def test_base_scroll_only_calculates_generic_visible_positions(self):
+        scroll = BaseScroll(["one", "two", "three", "four", "five"])
+        self.assertEqual(scroll.setup(), ((0, 0), (1, 1), (2, 2), (3, 3)))
+        self.assertEqual(scroll(4), ((1, 0), (2, 1), (3, 2), (4, 3)))
+        self.assertEqual(scroll.current_index, 4)
+
+    def test_settings_edit_opens_wifi_without_app_state_registry(self):
+        app = FakeApp()
+        settings = SettingsNav(app)
+        app.state_manager.start(settings)
+        settings.current_index = 2
+        settings.handle_input(True, 3)
+        settings.handle_input(True, 3)
+        self.assertIsInstance(app.state_manager.current_state(), WifiState)
 
     def test_reopening_presets_uses_fresh_loader(self):
         app = FakeApp(); menu = MainMenuCycleState(app, "message")

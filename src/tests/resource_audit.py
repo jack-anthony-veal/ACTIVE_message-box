@@ -167,11 +167,9 @@ measure("PresetMenu.input_and_draw", preset_cycle, 100)
 
 def hardware_checks():
     from machine import SPI, Pin
-    from config.display_config import (
+    from config.config import (
         DISPLAY_SPI_BAUDRATE, DISPLAY_SPI_BUS, DISPLAY_SPI_PHASE,
         DISPLAY_SPI_POLARITY,
-    )
-    from config.gpio_config import (
         BUTTON_PIN, DISPLAY_MOSI_PIN, DISPLAY_SCK_PIN,
     )
 

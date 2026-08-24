@@ -1,173 +1,83 @@
-# Message-Box
+# Message Box
 
-An embedded messaging system built with two ESP32-WROOM devices, GMTO24-08-SPI8P 240×320 ST7789V LCDs, rotary encoders, and a self-hosted FastAPI backend.
+Message Box is an ESP32/MicroPython messaging device with a 240×320 ST7789V
+RGB565 LCD, rotary encoder input, and a FastAPI backend.
 
-## Server Site
-projectserver.org
+## Firmware architecture
 
-## Repo Tree
+The client firmware lives in `src/client/`. Its ownership rules are deliberately
+simple:
+
+- `config/config.py` is the one shared source for hardware pins, display
+  geometry, colours, timing, limits, storage paths, and state indexes.
+- `assets/registry.py::ASSETS` maps asset keys to their path and dimensions.
+- `assets/registry.py::ICONS` gives those registered assets readable semantic
+  names.
+- Each state owns its labels, icons, selection, and transition meanings.
+- `Display` owns generic drawing operations; `BaseScroll` owns only scrolling
+  and visible-window calculations.
+- `libraries/utils/wifi.py` owns shared Wi-Fi interface mechanics. Wi-Fi states
+  still own their screens and navigation.
+
+Production firmware targets MicroPython 1.28.0. The ST7789 driver is the
+`russhughes/st7789_mpy` C user module frozen into the project firmware; it is
+not a deployable `st7789.py` file.
+
+## Adding a menu item
+
+1. Add the label and icon to that screen's state file.
+2. Select the icon through `assets.registry.ICONS`.
+3. Render the item with the generic `display.draw_menu_row()` helper.
+
+For example:
+
+```python
+from assets.registry import ICONS
+
+display.draw_menu_row(
+    row_index,
+    "Wi-Fi",
+    icon=ICONS["menu"]["wifi"],
+)
 ```
 
-├── .github
-│   └── workflows
-│       └── package.yml
-├── .idea
-│   ├── inspectionProfiles
-│   │   └── profiles_settings.xml
-│   ├── .gitignore
-│   ├── message-box.iml
-│   ├── modules.xml
-│   └── vcs.xml
-├── demo
-│   ├── IMG_6451.mov
-│   └── IMG_6497.PNG
-├── src
-│   ├── client
-│   │   ├── app
-│   │   │   ├── __init__.py
-│   │   │   ├── api.py
-│   │   │   ├── app.py
-│   │   │   ├── exception_handler.py
-│   │   │   └── StateNavigator.py
-│   │   ├── config
-│   │   │   ├── __init__.py
-│   │   │   ├── config.py
-│   │   │   ├── keymap_layout.py
-│   │   │   └── network.ini
-│   │   ├── database
-│   │   │   ├── display.txt
-│   │   │   └── preset.txt
-│   │   ├── hardware_devices
-│   │   │   ├── __init__.py
-│   │   │   ├── display_device.py
-│   │   │   ├── dummy.py
-│   │   │   ├── input_device.py
-│   │   │   └── storage.py
-│   │   ├── libraries
-│   │   │   ├── utils
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── ascii.py
-│   │   │   │   ├── debug.py
-│   │   │   │   ├── menutools.py
-│   │   │   │   ├── text_tools.py
-│   │   │   │   ├── typing.py
-│   │   │   │   └── wifi_status.py
-│   │   │   ├── __init__.py
-│   │   │   ├── buffer_.py
-│   │   │   ├── config.py
-│   │   │   ├── rotary_irq_esp.py
-│   │   │   ├── rotary.py
-│   │   ├── logs
-│   │   │   └── errors.txt
-│   │   ├── start_up
-│   │   │   ├── __init__.py
-│   │   │   ├── result.py
-│   │   │   └── tests.py
-│   │   ├── states
-│   │   │   ├── home
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── LoadingMainMenuState.py
-│   │   │   │   ├── MainMenuState.py
-│   │   │   │   ├── MessageState.py
-│   │   │   │   └── PresetMenu.py
-│   │   │   ├── presets
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── LoadingPresetsState.py
-│   │   │   │   ├── PresetInteract.py
-│   │   │   │   └── PresetMenu.py
-│   │   │   ├── proc
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── base_display.py
-│   │   │   │   └── StateNavigator.py
-│   │   │   ├── settings
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── settings_navigate.py
-│   │   │   │   ├── wifi_settings.py
-│   │   │   │   └── WIFI.py
-│   │   │   ├── __init__.py
-│   │   │   ├── keyboard.py
-│   │   │   └── NotifyState.py
-│   │   ├── __init__.py
-│   │   ├── boot.py
-│   │   └── main.py
-│   └── host
-│       ├── __pycache__
-│       │   └── main.cpython-313.pyc
-│       ├── data
-│       │   ├── ella.txt
-│       │   ├── jack.txt
-│       │   └── presets.json
-│       ├── static
-│       │   └── index.html
-│       ├── index.html
-│       └── main.py
-├── tests
-│   ├── __pycache__
-│   │   ├── current_regression_tests.cpython-313.pyc
-│   │   ├── esp32_regression_tests.cpython-313.pyc
-│   │   ├── esp32_state_tests.cpython-313.pyc
-│   │   ├── esp32_tests.cpython-313.pyc
-│   │   ├── full_local_tests.cpython-313.pyc
-│   │   ├── host_tests.cpython-313.pyc
-│   │   ├── resource_audit.cpython-313.pyc
-│   │   └── service_edge_tests.cpython-313.pyc
-│   ├── current_regression_tests.py
-│   ├── esp32_regression_tests.py
-│   ├── esp32_state_tests.py
-│   ├── esp32_tests.py
-│   ├── full_local_tests.py
-│   ├── host_tests.py
-│   ├── resource_audit.py
-│   └── service_edge_tests.py
-└── README.md
+## Changing GPIO, layout, or timing
+
+Edit `src/client/config/config.py` only. Startup checks and runtime modules
+import the same constants, so hardware values do not need to be repeated in
+tests or documentation.
+
+## Local credentials
+
+Copy `src/client/config/network.example.ini` to
+`src/client/config/network.ini`, then fill in the local SSID and password.
+`network.ini` is ignored by Git and must not be committed or logged.
+
+## Local verification
+
+From the repository root:
+
+```sh
+python -m compileall -q src
+python src/tests/display_migration_tests.py
+python src/tests/full_local_tests.py
+python src/tests/host_tests.py
+python src/tests/host_api_tests.py
+python src/tests/service_edge_tests.py
+python src/tests/current_regression_tests.py
 ```
 
-## Architecture
+The `esp32_*` scripts and `resource_audit.py` contain board-only checks and are
+not substitutes for observing the physical LCD.
 
-`Message-Box A ⇄ FastAPI Server ⇄ Message-Box B`
-
-Each ESP32 runs MicroPython and communicates with the backend over HTTP. The ST7789V LCD provides the interface and the rotary encoder provides navigation and input.
+The host API reads its request token from the required `MESSAGE_BOX_TOKEN`
+environment variable; it has no source-code default.
 
 ## Hardware
 
-- 2× ESP32-WROOM
-- 2× GMTO24-08-SPI8P 240×320 ST7789V LCD
-- 2× rotary encoders
+- ESP32-WROOM
+- GMTO24-08-SPI8P 240×320 ST7789V LCD over SPI
+- Rotary encoder and button
 
-## Software
-
-- MicroPython 1.28.0
-- Python / FastAPI
-- HTTP
-- SPI
-- Automated tests
-
-## Repository
-
-- `src/` — firmware
-- `demo/` — demonstrations
-- `tests/` — tests
-
-## Features
-
-- Two-device messaging
-- Colour LCD interface
-- Rotary encoder navigation
-- Menus, presets and settings
-- Self-hosted backend
-
-## Setup
-
-1. Flash `src/client/firmware/micropython-1.28.0-esp32-st7789.bin` to both ESP32s.
-2. Upload the firmware from `src/`.
-3. Configure the API endpoint locally.
-4. Start the FastAPI server.
-5. Connect both devices to the network.
-
-Keep credentials, Wi-Fi passwords, API keys, tokens and private endpoints out of the repository.
-
-## Status
-
-**Active prototype.**
-
-This project combines embedded firmware, electronics, physical user interfaces, networking, backend development and testing.
+The current pin map, SPI settings, and display options are all in
+`src/client/config/config.py`.

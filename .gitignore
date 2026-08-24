@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+.idea/
+.venv/
+
+# Local device credentials. Copy network.example.ini to this path.
+src/client/config/network.ini

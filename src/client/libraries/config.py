@@ -1,6 +1,4 @@
 class Config:
-    def __init__(self):
-        pass
     @staticmethod
     def parse(value):
         value = value.strip()
@@ -40,7 +38,6 @@ class Config:
 
     @staticmethod
     def read(filename):
-        c = Config()
         config = {}
         current_section = None
 
@@ -68,7 +65,7 @@ class Config:
                 key, value = line.split("=", 1)
 
                 key = key.strip()
-                value = c.parse(value)
+                value = Config.parse(value)
 
                 if current_section is None:
                     config[key] = value
@@ -79,14 +76,13 @@ class Config:
 
     @staticmethod
     def write(filename, config):
-        c = Config()
         with open(filename, "w") as file:
             # Write global values first
             for key, value in config.items():
                 if not isinstance(value, dict):
                     file.write("{} = {}\n".format(
                         key,
-                        self.format(value)
+                        Config.format(value)
                     ))
 
             # Add a blank line between global values and sections
@@ -120,5 +116,5 @@ class Config:
                 for key, value in values.items():
                     file.write("{} = {}\n".format(
                         key,
-                        c.format(value)
+                        Config.format(value)
                     ))

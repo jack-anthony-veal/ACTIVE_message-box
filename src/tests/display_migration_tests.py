@@ -1,5 +1,6 @@
 import os
 import re
+import subprocess
 import sys
 import tempfile
 import types
@@ -15,8 +16,8 @@ micropython = types.ModuleType("micropython")
 micropython.const = lambda value: value
 sys.modules.setdefault("micropython", micropython)
 
-from assets.registry import ASSETS, PLACEMENTS, REGIONS
-from config.display_config import (
+from assets.registry import ASSETS, ICONS, PLACEMENTS, REGIONS
+from config.config import (
     DISPLAY_COLOR_ORDER,
     DISPLAY_INVERSION,
     DISPLAY_ROTATION,
@@ -24,8 +25,6 @@ from config.display_config import (
     DISPLAY_SPI_BUS,
     DISPLAY_SPI_PHASE,
     DISPLAY_SPI_POLARITY,
-)
-from config.gpio_config import (
     BUTTON_PIN,
     DIAL_CLK_PIN,
     DIAL_DT_PIN,
@@ -35,8 +34,6 @@ from config.gpio_config import (
     DISPLAY_RESET_PIN,
     DISPLAY_SCK_PIN,
     WAKE_PIN,
-)
-from config.ui_config import (
     CONTENT_BOTTOM,
     MENU_ROW_HEIGHT,
     MENU_VISIBLE_ROWS,
@@ -51,8 +48,9 @@ from config.ui_config import (
     visible_window,
 )
 from hardware_devices.display_device import Display
+from libraries.config import Config
 from libraries.utils.text_layout import layout_text
-from states.proc.base_display import menu_positions
+from states.proc.base_display import BaseScroll, menu_positions
 
 
 class FakeBackend:
@@ -264,6 +262,25 @@ class TestDisplayAbstraction(unittest.TestCase):
 
 
 class TestRawAssets(unittest.TestCase):
+    def test_icon_aliases_reference_and_cover_registry(self):
+        expected_prefixes = {
+            "menu": "menu_",
+            "navigation": "nav_",
+            "action": "action_",
+            "status": "status_",
+            "state": "state_",
+        }
+        referenced_assets = []
+        self.assertEqual(set(ICONS), set(expected_prefixes))
+        for category_name, category in ICONS.items():
+            for asset_name in category.values():
+                self.assertIn(asset_name, ASSETS)
+                self.assertIsInstance(asset_name, str)
+                self.assertTrue(asset_name.startswith(expected_prefixes[category_name]))
+                referenced_assets.append(asset_name)
+        self.assertEqual(set(referenced_assets), set(ASSETS))
+        self.assertEqual(len(referenced_assets), len(set(referenced_assets)))
+
     def test_registered_files_exist_and_match_rgb565_size(self):
         self.assertEqual(len(ASSETS), 45)
         registered_paths = set()
@@ -341,6 +358,57 @@ class TestRawAssets(unittest.TestCase):
                 data[-2:],
             )
             self.assertEqual(corners, (b"\x00\x00",) * 4, name)
+
+
+class TestMaintainability(unittest.TestCase):
+    def test_config_round_trip(self):
+        expected = {
+            "enabled": True,
+            "count": 3,
+            "network": {
+                "ssid": "Example network",
+                "password": "not-a-real-password",
+            },
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "round-trip.ini")
+            Config.write(path, expected)
+            self.assertEqual(Config.read(path), expected)
+
+    def test_base_scroll_has_no_settings_content(self):
+        path = os.path.join(
+            CLIENT, "states", "proc", "base_display.py"
+        )
+        with open(path, "r") as source:
+            implementation = source.read().lower()
+        for forbidden in (
+            "settings", "account", "device", "wifi", "graphics", "tbd",
+            "menu_account", "menu_device", "menu_wifi", "menu_graphics",
+        ):
+            self.assertNotIn(forbidden, implementation)
+        self.assertTrue(callable(BaseScroll(("one", "two"))))
+
+    def test_state_navigator_has_one_canonical_module(self):
+        from app.StateNavigator import StateNavigator
+
+        self.assertTrue(callable(StateNavigator))
+        self.assertFalse(os.path.exists(os.path.join(
+            CLIENT, "states", "proc", "StateNavigator.py"
+        )))
+
+    def test_no_tracked_python_cache_files(self):
+        result = subprocess.run(
+            ["git", "ls-files"],
+            cwd=os.path.dirname(ROOT),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        tracked = tuple(
+            path for path in result.stdout.splitlines()
+            if "__pycache__/" in path or path.endswith(".pyc")
+        )
+        self.assertEqual(tracked, ())
 
 
 if __name__ == "__main__":

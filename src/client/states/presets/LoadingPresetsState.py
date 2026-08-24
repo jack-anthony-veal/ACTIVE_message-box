@@ -1,10 +1,9 @@
+from assets.registry import ICONS
+from config.config import APP_FLAG_NON_FATAL_API, ERROR_HTTP_GET, ERROR_UNKNOWN
 from states.presets.PresetMenu import PresetMenu
 from states.NotifyState import ErrorState
-_OTHER = 1 << 0
-_NON_FATAL_API = 1 << 1
-_NON_FATAL_WIFI= 1 << 2
-_NON_FATAL_HTTP= 1 << 3
-_NON_FATAL = 1 << 4
+
+
 class LoadingPresetsState:
     def __init__(self, app):
         self.app = app
@@ -27,20 +26,26 @@ class LoadingPresetsState:
         try:
             success, presets = self.app.message_api.load_presets()
         except Exception as error:
-            self.app.state_manager.replace_state(ErrorState(self.app, str(error), 12))
+            self.app.state_manager.replace_state(
+                ErrorState(self.app, str(error), ERROR_HTTP_GET)
+            )
             return
 
         if success and presets:
             self.app.state_manager.replace_state(PresetMenu(self.app, presets))
             return
         
-        if not self.app.flags & _NON_FATAL_API:
-            self.app.flags |= _NON_FATAL_API
-            self.app.state_manager.replace_state(ErrorState(self.app, "Unable to load presets", 0))
+        if not self.app.flags & APP_FLAG_NON_FATAL_API:
+            self.app.flags |= APP_FLAG_NON_FATAL_API
+            self.app.state_manager.replace_state(
+                ErrorState(self.app, "Unable to load presets", ERROR_UNKNOWN)
+            )
             return
             
         self.app.state_manager.replace_state(PresetMenu(self.app, ["unable to load", "check wifi conn", "unable to load"]))
         return
 
     def draw(self):
-        self.app.display.draw_loading("Loading presets", "state_loading_presets")
+        self.app.display.draw_loading(
+            "Loading presets", ICONS["state"]["loading_presets"]
+        )

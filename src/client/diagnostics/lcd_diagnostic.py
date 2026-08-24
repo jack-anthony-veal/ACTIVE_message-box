@@ -1,7 +1,7 @@
 import gc
 import time
 
-from config.ui_config import (
+from config.config import (
     COLOR_BACKGROUND, COLOR_BORDER, COLOR_PRIMARY, COLOR_TEXT,
     CONTENT_BOTTOM, CONTENT_TOP, SCREEN_HEIGHT, SCREEN_MARGIN, SCREEN_WIDTH,
     rgb565,
