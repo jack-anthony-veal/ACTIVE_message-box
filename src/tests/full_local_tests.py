@@ -345,7 +345,11 @@ class TestApi(unittest.TestCase):
         self.assertTrue(response.closed)
 
     def test_read_message_contract(self):
-        for payload, expected in (({"message": "hello"}, True), ({"message": None}, False), ([], False)):
+        record = {
+            "id": "1", "sender": "ella", "text": "hello",
+            "utc": "2026-09-07T12:00:00Z",
+        }
+        for payload, expected in (({"message": record}, True), ({"message": None}, False), ([], False)):
             requests.response = FakeResponse(payload=payload)
             success, data = self.api.read_new_message()
             self.assertEqual(success, expected)
@@ -402,8 +406,8 @@ class TestStates(unittest.TestCase):
         self.assertIsInstance(app.state_manager.current_state(), MainMenuCycleState)
 
     def test_preset_loader_once_success_empty_failure(self):
-        for result, expected_type in (((True, ["one"]), PresetMenu), ((True, []), ErrorState),
-                                      ((False, ["fallback"]), ErrorState)):
+        for result, expected_type in (((True, ["one"]), PresetMenu), ((True, []), PresetMenu),
+                                      ((False, ["fallback"]), PresetMenu)):
             app = FakeApp(); app.message_api.preset_result = result
             state = LoadingPresetsState(app); app.state_manager.start(state)
             state.update(); state.update()
@@ -425,7 +429,7 @@ class TestStates(unittest.TestCase):
         settings = SettingsNav(app)
         self.assertEqual(
             settings.settings_menu,
-            ("Account", "Device", "Wi-Fi", "Graphics", "TBD"),
+            ("Account", "Device", "Wi-Fi", "Graphics", "About"),
         )
         self.assertEqual(
             settings.icons,
@@ -456,7 +460,7 @@ class TestStates(unittest.TestCase):
 
         app.display.calls.clear()
         settings.current_index = 4
-        settings.index_flag = 1
+        settings.needs_draw = True
         settings.draw()
         rows = [call for call in app.display.calls if call[0] == "draw_menu_row"]
         self.assertEqual([call[1][0] for call in rows], [0, 1, 2, 3])
@@ -500,6 +504,9 @@ class TestStates(unittest.TestCase):
         app.state_manager.start(menu)
         menu.handle_input(1, 4); self.assertEqual(menu.preset_data_select, "two")
         menu.handle_input(1, 4); self.assertEqual(menu.preset_data_select, "one")
+        menu.handle_input(True, 3)
+        self.assertTrue(menu.controller.menu_open)
+        menu.handle_input(1, 4)
         menu.handle_input(True, 3)
         self.assertIsInstance(app.state_manager.current_state(), PresetInteract)
 

@@ -5,3 +5,17 @@ __pycache__/
 
 # Local device credentials. Copy network.example.ini to this path.
 src/client/config/network.ini
+src/client/config/device.ini
+
+# Device runtime data and host update packages.
+src/client/database/messages.jsonl
+src/client/database/update-state.json
+src/client/database/update-result.json
+src/client/database/*.tmp
+src/client/database/*.repair
+src/client/.update-stage/
+src/client/.update-backup/
+src/host/data/*.slot.json
+src/host/data/update-results.json
+src/host/data/*.tmp
+src/host/updates/current/

@@ -1,25 +1,127 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Message Box</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    body { max-width: 44rem; margin: 3rem auto; padding: 0 1rem; background: #101419; color: #edf3f8; }
+    main { display: grid; gap: 1rem; }
+    section { padding: 1rem; border: 1px solid #42505d; border-radius: .65rem; background: #182029; }
+    label { display: grid; gap: .35rem; margin-bottom: .8rem; }
+    input, textarea, select, button { font: inherit; padding: .65rem; border-radius: .4rem; border: 1px solid #607080; }
+    input, textarea, select { background: #0d1217; color: inherit; }
+    textarea { min-height: 6rem; resize: vertical; }
+    button { cursor: pointer; background: #2076c7; color: white; }
+    button.secondary { background: #344452; }
+    button.danger { background: #9b3540; }
+    .row { display: flex; gap: .5rem; align-items: end; }
+    .row > label { flex: 1; }
+    .preset { display: grid; grid-template-columns: 1fr auto auto; gap: .5rem; margin: .5rem 0; }
+    #status { min-height: 1.5rem; color: #9fc8ec; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Message Box</h1>
+    <section>
+      <div class="row">
+        <label>Sender
+          <select id="person"><option>jack</option><option>ella</option></select>
+        </label>
+        <label>Shared token
+          <input id="token" type="password" autocomplete="off">
+        </label>
+      </div>
+    </section>
+    <section>
+      <h2>Send a message</h2>
+      <label>Message<textarea id="message" maxlength="4096"></textarea></label>
+      <button id="send">Send</button>
+    </section>
+    <section>
+      <h2>Presets <small id="count">0 / 5</small></h2>
+      <div id="presets"></div>
+      <div class="row">
+        <label>New preset<input id="new-preset" maxlength="4096"></label>
+        <button id="add">Add</button>
+      </div>
+      <button id="refresh" class="secondary">Refresh</button>
+    </section>
+    <output id="status" aria-live="polite"></output>
+  </main>
+  <script>
+    const person = document.querySelector('#person');
+    const token = document.querySelector('#token');
+    const status = document.querySelector('#status');
+    const presets = document.querySelector('#presets');
+    const count = document.querySelector('#count');
 
-        <style>
+    async function request(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: {'content-type': 'application/json', 'box-token': token.value}
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.detail || `HTTP ${response.status}`);
+      return body;
+    }
 
-        input[type=text] {
-            width: 40%;
-            padding: 12px;
-            margin: 10px 0;
-            box-sizing: border-box;
-            border-radius: 2px;
-        }
+    function report(message, error = false) {
+      status.textContent = message;
+      status.style.color = error ? '#ff9ca7' : '#9fc8ec';
+    }
 
-        <\style>
+    async function loadPresets() {
+      try {
+        const body = await request(`/presets/${person.value}`);
+        count.textContent = `${body.presets.length} / 5`;
+        presets.replaceChildren(...body.presets.map((text, index) => {
+          const row = document.createElement('div');
+          row.className = 'preset';
+          const input = document.createElement('input');
+          input.value = text;
+          const save = document.createElement('button');
+          save.textContent = 'Save';
+          save.className = 'secondary';
+          save.onclick = async () => {
+            await request(`/presets/${person.value}/${index}`, {method: 'PUT', body: JSON.stringify({text: input.value})});
+            report('Preset saved');
+            loadPresets();
+          };
+          const remove = document.createElement('button');
+          remove.textContent = 'Delete';
+          remove.className = 'danger';
+          remove.onclick = async () => {
+            await request(`/presets/${person.value}/${index}`, {method: 'DELETE'});
+            report('Preset deleted');
+            loadPresets();
+          };
+          input.ondblclick = () => document.querySelector('#message').value = input.value;
+          row.append(input, save, remove);
+          return row;
+        }));
+      } catch (error) { report(error.message, true); }
+    }
 
-    </head>
-
-        <h2> Preset phrases <\h2>
-
-        <body>
-            <input type="text" name="preset">preset a phrase</input>
-        </body>
+    document.querySelector('#send').onclick = async () => {
+      try {
+        await request(`/send/${person.value}`, {method: 'POST', body: JSON.stringify({text: document.querySelector('#message').value})});
+        report('Message placed in the sender slot');
+      } catch (error) { report(error.message, true); }
+    };
+    document.querySelector('#add').onclick = async () => {
+      try {
+        const input = document.querySelector('#new-preset');
+        await request(`/presets/${person.value}`, {method: 'POST', body: JSON.stringify({text: input.value})});
+        input.value = '';
+        report('Preset added');
+        loadPresets();
+      } catch (error) { report(error.message, true); }
+    };
+    document.querySelector('#refresh').onclick = loadPresets;
+    person.onchange = loadPresets;
+  </script>
+</body>
 </html>

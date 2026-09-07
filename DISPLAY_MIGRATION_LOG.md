@@ -493,3 +493,35 @@ Hardware validation still required:
 
 Remaining:
 - None for the local maintainability/refactor scope.
+
+## Stage 15 — finished mailbox, state flow, startup, OTA, and Wokwi proof
+
+Files changed:
+- `src/client/config/`, `app/`, `hardware_devices/`, `states/`, `start_up/`
+- `src/host/main.py`, `src/host/static/index.html`
+- `tools/`, `wokwi.toml`, `diagram.json`, `wokwi/`
+- `src/tests/`
+
+Changes:
+- Removed the tracked token and moved token, owner, peer, and base URL to ignored `device.ini`.
+- Added non-destructive JSON sender slots, matching-ID ACK, append-only deduplicated device JSONL, UK timestamp formatting, and zero-to-five presets.
+- Standardized normal screens on content-first/hidden-menu behavior and repaired Messages, settings stack navigation, Wi-Fi status, keyboard special keys, and long preset scrolling.
+- Added the ordered startup health gate and non-fatal Wi-Fi/server warnings.
+- Added SHA-256 application OTA with staging, preserved local data, one backup, first-boot health, rollback, packaging, authenticated host delivery, and bounded result logging.
+- Kept the OTA bootstrap outside deployable packages and added a reset timer so a new `main.py` that cannot import is rolled back on the next boot.
+- Added the custom-firmware Wokwi/RFC2217 project, simulator-only display backend, upload runner, serial markers, and automated scenarios.
+
+Validation:
+- Seven host suites pass 110 tests in total (28, 33, 12, 3, 8, 5, and 21); the updated board-state and board-regression suites also pass 5 and 3 checks under the host hardware stubs.
+- `python -m compileall -q src tools`, all 55 client files through `mpy-cross`, Python 3.9 syntax parsing, the 100-file OTA package/hash audit, shell syntax, asset placement diagnostics, and `git diff --check` pass.
+- The single safe probe authorized for 2026-09-08 returned `mpremote: no device found`; no firmware was flashed. An earlier 2026-09-07 probe had the same result.
+- `wokwi.toml`, `diagram.json`, the 1,797,824-byte custom firmware path, upload helper, and all four scenario YAML files pass local validation.
+- Wokwi itself did not run: `wokwi-cli` is not installed and `WOKWI_CLI_TOKEN` is unavailable. `./tools/run_wokwi_tests.sh` exits 2 with `BLOCKED: wokwi-cli is not installed`.
+
+Hardware validation still required:
+- The ESP32 was reported connected with no peripherals, but was not visible to `mpremote` from this environment.
+- No LCD or encoder validation was claimed, and the firmware was not flashed.
+
+Remaining:
+- Install Wokwi CLI, set `WOKWI_CLI_TOKEN`, and run `./tools/run_wokwi_tests.sh`.
+- Re-run board startup and updater tests when the ESP32 serial port becomes visible.

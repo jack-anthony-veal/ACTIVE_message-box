@@ -5,14 +5,21 @@ from config.config import (
 )
 from states.presets.LoadingPresetsState import LoadingPresetsState
 from states.settings.settings_navigate import SettingsNav
+from states.message.message import MessageDisplay
 
 
 class MainMenuCycleState:
     def __init__(self, app, message_preview=None):
         self.app = app
+        self.message_record = message_preview if type(message_preview) is dict else None
+        preview_text = (
+            message_preview.get("text")
+            if type(message_preview) is dict
+            else message_preview
+        )
         self.options = ["Message", "Presets", "Settings"]
         self.previews = [
-            message_preview,
+            preview_text,
             "Open saved message presets",
             "Device and network settings",
         ]
@@ -43,8 +50,10 @@ class MainMenuCycleState:
             return
         if event_type == BUTTON_PRESS:
             if self.current_index == HOME_MESSAGE_INDEX:
-                self.app.state_manager.push_state()
-            if self.current_index == HOME_PRESETS_INDEX:
+                self.app.state_manager.push_state(
+                    MessageDisplay(self.app, self.message_record)
+                )
+            elif self.current_index == HOME_PRESETS_INDEX:
                 self.app.state_manager.push_state(LoadingPresetsState(self.app))
             elif self.current_index == HOME_SETTINGS_INDEX:
                 self.app.state_manager.push_state(SettingsNav(self.app))
@@ -69,15 +78,11 @@ class MainMenuCycleState:
                 icon=self.icons[index],
                 selected_icon=self.selected_icons[index],
             )
-        right = (
-            "Open"
-            if self.current_index in (HOME_PRESETS_INDEX, HOME_SETTINGS_INDEX)
-            else ""
-        )
+        right = "Open"
         display.draw_nav_bar(
             left="Rotate", right=right,
             left_icon=ICONS["action"]["scroll"],
-            right_icon=ICONS["navigation"]["select"] if right else None,
+            right_icon=ICONS["navigation"]["select"],
         )
         self.index_updated = False
 

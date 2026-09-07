@@ -11,12 +11,12 @@ from config.config import (
 from libraries.config import Config
 from libraries.utils.wifi import connect
 from states.settings.wifi_settings import WifiSettings
+from states.proc.two_mode import TwoModeController
 
 
 _CONNECTED = const(1)
 _NOT_CONNECTED = const(2)
 _REFRESH = const(4)
-_MENU = const(8)
 _ACTION_CHANGE = const(0)
 _ACTION_BACK = const(1)
 
@@ -35,8 +35,8 @@ class WifiState:
         self.station.active(True)
         self.connected_flag = 0
         self.connection_info = {"SSID": None, "Status": None}
-        self.current_index = None
-        self.dirty = _REFRESH | _MENU
+        self.controller = TwoModeController(2)
+        self.dirty = _REFRESH
         self.options = ("Change", "Back")
 
     def _connect_sequence(self):
@@ -52,10 +52,6 @@ class WifiState:
 
     def _draw_status(self):
         display = self.app.display
-        status_label = "Checking"
-        status_asset = ICONS["status"]["sync"]
-        state_asset = None
-        display.begin_screen("Wi-Fi", status_label, status_asset)
         status = str(self.connection_info["Status"])
         connected = status == "Connected"
         status_label = "Online" if connected else "Offline"
@@ -69,6 +65,7 @@ class WifiState:
             if connected
             else ICONS["state"]["wifi_error"]
         )
+        display.begin_screen("Wi-Fi", status_label, status_asset)
 
         if state_asset:
             display.draw_asset(state_asset, STATE_ART_X, STATE_ART_Y)
@@ -88,9 +85,12 @@ class WifiState:
 
     def _draw_selected(self):
         selected = None
-        if self.current_index == _ACTION_CHANGE:
+        if not self.controller.menu_open:
+            self.app.display.draw_nav_bar()
+            return
+        if self.controller.action_index == _ACTION_CHANGE:
             selected = NAV_RIGHT_INDEX
-        elif self.current_index == _ACTION_BACK:
+        elif self.controller.action_index == _ACTION_BACK:
             selected = NAV_LEFT_INDEX
         self.app.display.draw_nav_bar(
             left="Back", right="Change", selected=selected,
@@ -100,9 +100,10 @@ class WifiState:
 
     def enter_state(self):
         self.connected_flag = 0
+        self.controller.hide_menu()
         self.connection_info["SSID"] = self._ssid
         self.connection_info["Status"] = "Checking"
-        self.dirty |= _REFRESH | _MENU
+        self.dirty |= _REFRESH
         self.draw()
 
         if self._connect_sequence():
@@ -112,24 +113,23 @@ class WifiState:
         self.connection_info["Status"] = (
             "Connected" if self.connected_flag & _CONNECTED else "Not Connected"
         )
-        self.dirty |= _REFRESH | _MENU
+        self.dirty |= _REFRESH
         self.draw()
 
     def update(self):
         return
 
     def handle_input(self, event, type_):
-        if type_ == DIAL_EVENT and self.current_index is not None:
-            self.current_index = (self.current_index + event) % len(self.options)
-            self.dirty |= _MENU
+        if type_ == DIAL_EVENT and self.controller.rotate(event):
+            self.dirty |= _REFRESH
             return
-        if type_ == BUTTON_EVENT and self.current_index is None:
-            self.current_index = 0
-            self.dirty |= _MENU
-            return
-        if type_ == BUTTON_EVENT and self.current_index is not None:
-            if self.current_index == _ACTION_CHANGE:
-                self.app.state_manager.replace_state(WifiSettings(self.app))
+        if type_ == BUTTON_EVENT:
+            selected = self.controller.activate()
+            self.dirty |= _REFRESH
+            if selected is None:
+                print("MENU|wifi|open")
+            elif selected == _ACTION_CHANGE:
+                self.app.state_manager.push_state(WifiSettings(self.app))
             else:
                 self.app.state_manager.pop_state()
 

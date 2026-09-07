@@ -17,12 +17,11 @@ from config.config import (
 from libraries.config import Config
 from libraries.utils.wifi import connect, reset_interface, signal_level
 from states.keyboard import Keyboard
+from states.proc.two_mode import TwoModeController
 
 
 _LIST_DIRTY = const(1 << 0)
 _MENU_DIRTY = const(1 << 1)
-_MAIN_SELECTED = const(1 << 0)
-_MENU_SELECTED = const(1 << 1)
 _ACTION_ENTER = const(0)
 _ACTION_BACK = const(1)
 
@@ -38,9 +37,7 @@ class WifiSettings:
         self.networks = []
 
         self.current_index = None
-        self.menu_index = None
-        self.main_flag = _MAIN_SELECTED
-        self.menu_flag = 0
+        self.controller = TwoModeController(2)
         self.dirty = _LIST_DIRTY | _MENU_DIRTY
 
         self.actions = ("Enter", "Back")
@@ -65,9 +62,7 @@ class WifiSettings:
 
         self.networks = self._normalise_networks(scanned_networks, errors)
         self.current_index = 0 if self.networks else None
-        self.menu_index = None
-        self.main_flag = _MAIN_SELECTED
-        self.menu_flag = 0
+        self.controller.hide_menu()
         self.dirty = _LIST_DIRTY | _MENU_DIRTY
 
         if errors:
@@ -101,13 +96,14 @@ class WifiSettings:
         return networks
 
     def _draw_actions(self):
-        selected = None
-        if self.menu_flag & _MENU_SELECTED:
-            selected = (
-                NAV_RIGHT_INDEX
-                if self.menu_index == _ACTION_ENTER
-                else NAV_LEFT_INDEX
-            )
+        if not self.controller.menu_open:
+            self.app.display.draw_nav_bar()
+            return
+        selected = (
+            NAV_RIGHT_INDEX
+            if self.controller.action_index == _ACTION_ENTER
+            else NAV_LEFT_INDEX
+        )
         self.app.display.draw_nav_bar(
             left=self.actions[_ACTION_BACK],
             right=self.actions[_ACTION_ENTER],
@@ -141,7 +137,7 @@ class WifiSettings:
                 str(ssid),
                 subtitle="secured" if security else "open",
                 selected=(
-                    row_index == 0 and bool(self.main_flag & _MAIN_SELECTED)
+                    row_index == 0 and not self.controller.menu_open
                 ),
                 icon=ICONS["status"]["wifi_" + str(bars)],
                 secondary_icon=(
@@ -162,6 +158,7 @@ class WifiSettings:
         if callback is not None:
             callback(ssid, rssi, security)
         else:
+            del self.selected_ssid_buffer[:]
             self.selected_ssid_buffer.extend(ssid.encode("utf-8"))
         return True
 
@@ -173,15 +170,14 @@ class WifiSettings:
             return
 
         if event_type == DIAL_EVENT:
-            if self.main_flag & _MAIN_SELECTED:
+            if not self.controller.menu_open:
                 if not self.networks:
                     return
                 current = 0 if self.current_index is None else self.current_index
                 self.current_index = (current + event) % len(self.networks)
                 self.dirty |= _LIST_DIRTY
-            elif self.menu_flag & _MENU_SELECTED:
-                current = 0 if self.menu_index is None else self.menu_index
-                self.menu_index = (current + event) % len(self.actions)
+            else:
+                self.controller.rotate(event)
                 self.dirty |= _MENU_DIRTY
             self.draw()
             return
@@ -189,24 +185,16 @@ class WifiSettings:
         if event_type != BUTTON_EVENT:
             return
 
-        if self.main_flag & _MAIN_SELECTED:
-            if not self.networks:
-                self.app.state_manager.pop_state()
-                return
-            self.main_flag = 0
-            self.menu_flag = _MENU_SELECTED
-            self.menu_index = _ACTION_ENTER
+        if not self.controller.menu_open:
+            self.controller.show_menu(
+                _ACTION_ENTER if self.networks else _ACTION_BACK
+            )
             self.dirty |= _LIST_DIRTY | _MENU_DIRTY
             self.draw()
             return
 
-        if self.menu_flag & _MENU_SELECTED:
-            selected = (
-                _ACTION_ENTER if self.menu_index is None else self.menu_index
-            )
-            self.menu_flag = 0
-            self.main_flag = _MAIN_SELECTED
-            self.menu_index = None
+        if self.controller.menu_open:
+            selected = self.controller.activate()
             self.dirty |= _LIST_DIRTY | _MENU_DIRTY
             self.draw()
 

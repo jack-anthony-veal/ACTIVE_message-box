@@ -30,11 +30,11 @@ class TestHostConfiguration(unittest.TestCase):
         self.assertTrue(host.INDEX_FILE.is_file())
         self.assertEqual(host.INDEX_FILE.parent.name, "static")
 
-    def test_preset_limits_use_named_geometry(self):
-        exact_fit = "x" * (host.DISPLAY_COLS * host.DISPLAY_ROWS)
-        self.assertEqual(host.clean_preset(exact_fit), exact_fit)
+    def test_preset_text_is_scrollable_but_bounded(self):
+        long_preset = "x" * host.MAX_TEXT_LENGTH
+        self.assertEqual(host.clean_preset(long_preset), long_preset)
         with self.assertRaises(HTTPException):
-            host.clean_preset(exact_fit + "x")
+            host.clean_preset(long_preset + "x")
 
 
 if __name__ == "__main__":

@@ -143,7 +143,7 @@ PLACEMENTS = (
     ("settings", "menu_device", 20, 126, "content"),
     ("settings", "menu_wifi", 20, 174, "content"),
     ("settings", "menu_graphics", 20, 222, "content"),
-    ("settings_tbd", "action_question", 20, 222, "content"),
+    ("settings_about", "action_question", 20, 222, "content"),
     ("settings_actions", "nav_back", 48, 288, "nav"),
     ("settings_actions", "nav_change_edit", 168, 288, "nav"),
     ("preset_menu", "action_scroll", 48, 288, "nav"),

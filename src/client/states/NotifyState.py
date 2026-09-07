@@ -133,7 +133,6 @@ class ErrorState:
                     from machine import reset
 
                     try:
-                        # TODO: Make screen nicer
                         self.app.display.begin_screen("Fatal error")
                         self.app.display.draw_text_block(
                             "Resetting the device",

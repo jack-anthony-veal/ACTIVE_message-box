@@ -1,16 +1,37 @@
 from micropython import const
 
 from libraries.config import Config
+from config.version import APP_VERSION
 
 
 # API / NETWORK
-TOKEN = cwvd7CsVgyy6xxbxupgw
-
-SEND_JACK_URL = "http://projectserver.org/send/jack"
-READ_ELLA_URL = "http://projectserver.org/read/ella"
-PRESETS_JACK_URL = "http://projectserver.org/presets/jack"
-
 NETWORK_CONFIG_FILE = "./config/network.ini"
+DEVICE_CONFIG_FILE = "./config/device.ini"
+
+try:
+    _device_config = Config.read(DEVICE_CONFIG_FILE)["device"]
+    TOKEN = str(_device_config["token"]).strip()
+    DEVICE_OWNER = str(_device_config["owner"]).strip().lower()
+    DEVICE_PEER = str(_device_config["peer"]).strip().lower()
+    BASE_URL = str(_device_config["base_url"]).strip().rstrip("/")
+except (OSError, KeyError, TypeError):
+    TOKEN = ""
+    DEVICE_OWNER = ""
+    DEVICE_PEER = ""
+    BASE_URL = ""
+
+SEND_MESSAGE_URL = BASE_URL + "/send/" + DEVICE_OWNER
+READ_MESSAGE_URL = BASE_URL + "/read/" + DEVICE_PEER
+ACK_MESSAGE_URL = BASE_URL + "/ack/" + DEVICE_PEER
+PRESETS_URL = BASE_URL + "/presets/" + DEVICE_OWNER
+UPDATE_MANIFEST_URL = BASE_URL + "/update/manifest"
+UPDATE_FILE_URL = BASE_URL + "/update/file"
+UPDATE_RESULT_URL = BASE_URL + "/update/results"
+
+# Compatibility names retained for older diagnostics.
+SEND_JACK_URL = SEND_MESSAGE_URL
+READ_ELLA_URL = READ_MESSAGE_URL
+PRESETS_JACK_URL = PRESETS_URL
 API_GET_TIMEOUT_S = const(5)
 API_POST_TIMEOUT_S = const(30)
 HTTP_SUCCESS_MIN = const(200)
@@ -37,6 +58,12 @@ except (OSError, KeyError, TypeError):
 # STORAGE PATHS
 DISPLAY_FILE = "./database/display.txt"
 PRESET_FILE = "./database/preset.txt"
+MESSAGES_FILE = "./database/messages.jsonl"
+ERROR_LOG_FILE = "./logs/errors.txt"
+UPDATE_STATE_FILE = "./database/update-state.json"
+UPDATE_RESULT_FILE = "./database/update-result.json"
+UPDATE_STAGE_DIR = "./.update-stage"
+UPDATE_BACKUP_DIR = "./.update-backup"
 MESSAGE_STORAGE_KEY = "message"
 PRESETS_STORAGE_KEY = "presets"
 NO_PRESETS_RESP = "No presets Upload on site"
@@ -226,7 +253,7 @@ ENCODER_MAX_VALUE = const(1000)
 ENCODER_RANGE_SIZE = const(ENCODER_MAX_VALUE - ENCODER_MIN_VALUE + 1)
 ENCODER_WRAP_THRESHOLD = const(ENCODER_RANGE_SIZE // 2)
 ENCODER_EVENT_DEBOUNCE_MS = const(275)
-ENCODER_MIN_STEP_DELTA = const(2)
+ENCODER_MIN_STEP_DELTA = const(1)
 ENCODER_MAX_STEP_DELTA = const(100)
 ENCODER_INCREMENT = const(1)
 
@@ -240,6 +267,10 @@ KEYBOARD_DOUBLE_PRESS_MS = const(400)
 FATAL_ERROR_DISPLAY_MS = const(5000)
 STARTUP_HTTP_TIMEOUT_S = const(5)
 STARTUP_MIN_FREE_STORAGE_BYTES = const(16_384)
+STARTUP_MIN_FREE_HEAP_BYTES = const(24_000)
+MAX_PRESETS = const(5)
+MAX_MESSAGE_BYTES = const(4096)
+UPDATE_SPACE_MARGIN_BYTES = const(16_384)
 
 
 # BUFFER LIMITS

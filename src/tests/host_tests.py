@@ -159,9 +159,13 @@ def test_state_manager():
     preset = PresetMenu(app, ["one"])
     app.state_manager.push_state(preset)
     preset.handle_input(True, 3)
+    preset.handle_input(1, 4)
+    preset.handle_input(True, 3)
     assert isinstance(app.state_manager.current_state(), PresetInteract)
     app.state_manager.current_state().handle_input(True, 3)
-    assert isinstance(app.state_manager.current_state(), LoadingMainMenuState)
+    assert app.state_manager.current_state().controller.menu_open
+    app.state_manager.current_state().handle_input(True, 3)
+    assert isinstance(app.state_manager.current_state(), PresetMenu)
 
 
 def test_fresh_reset():
@@ -178,20 +182,20 @@ def test_fresh_reset():
     assert current.started is False
 
 
-def test_loading_storage_failure():
+def test_loading_storage_failure_is_non_fatal():
     app = App()
     app.storage.raise_read = True
     app.state_manager.start(LoadingMainMenuState(app))
     app.state_manager.update()
-    assert isinstance(app.state_manager.current_state(), ErrorState)
+    assert isinstance(app.state_manager.current_state(), MainMenuCycleState)
 
 
-def test_loading_presets_failure():
+def test_loading_presets_failure_is_non_fatal():
     app = App()
     app.message_api.preset_error = OSError("timeout")
     app.state_manager.start(LoadingPresetsState(app))
     app.state_manager.update()
-    assert isinstance(app.state_manager.current_state(), ErrorState)
+    assert isinstance(app.state_manager.current_state(), PresetMenu)
 
 
 def test_sending_success():
@@ -256,8 +260,8 @@ def test_notification_box():
 
 check("StateNavigator push/pop/replace", test_state_manager)
 check("StateNavigator reset creates fresh loader", test_fresh_reset)
-check("LoadingMainMenu storage failure remains ErrorState", test_loading_storage_failure)
-check("LoadingPresets API failure becomes ErrorState", test_loading_presets_failure)
+check("LoadingMainMenu storage failure reaches offline Home", test_loading_storage_failure_is_non_fatal)
+check("LoadingPresets API failure reaches cached menu", test_loading_presets_failure_is_non_fatal)
 check("Sending success becomes Notify", test_sending_success)
 check("Sending false result becomes ErrorState", test_sending_false_result)
 check("Sending exception becomes ErrorState", test_sending_exception)

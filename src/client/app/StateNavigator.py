@@ -29,11 +29,14 @@ class StateNavigator:
         self.push_state(state)
 
     def push_state(self, state):
+        if state is None:
+            raise ValueError("state must not be None")
         current = self.current_state()
         if current is not None:
             current.exit_state()
         self._state_stack.append(state)
         state.enter_state()
+        print("STATE|{}".format(state.__class__.__name__))
 
     def pop_state(self):
         current = self.current_state()
@@ -46,6 +49,7 @@ class StateNavigator:
         current = self.current_state()
         if current is not None:
             current.enter_state()
+            print("STATE|{}".format(current.__class__.__name__))
         return current
 
     def reset(self):
@@ -60,10 +64,12 @@ class StateNavigator:
 
         self._state_stack.append(state)
         state.enter_state()
+        print("STATE|{}".format(state.__class__.__name__))
 
     def handle_input(self, event, event_type=None):
         current = self.current_state()
         if current is not None:
+            print("INPUT|{}|{}".format(event_type, event))
             current.handle_input(event, event_type)
 
     def update(self):

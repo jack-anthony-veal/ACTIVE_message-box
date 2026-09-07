@@ -1,7 +1,6 @@
 from assets.registry import ICONS
-from config.config import APP_FLAG_NON_FATAL_API, ERROR_HTTP_GET, ERROR_UNKNOWN
+from config.config import APP_FLAG_NON_FATAL_API, MAX_PRESETS
 from states.presets.PresetMenu import PresetMenu
-from states.NotifyState import ErrorState
 
 
 class LoadingPresetsState:
@@ -13,7 +12,7 @@ class LoadingPresetsState:
         self.draw()
 
     def exit_state(self):
-        pass
+        return
 
     def handle_input(self, event, event_type=None):
         return
@@ -22,28 +21,25 @@ class LoadingPresetsState:
         if self.started:
             return
         self.started = True
-
+        presets = []
         try:
-            success, presets = self.app.message_api.load_presets()
+            success, remote_presets = self.app.message_api.load_presets()
+            if success:
+                presets = list(remote_presets)[:MAX_PRESETS]
+                cache = getattr(self.app.storage, "write_preset_data", None)
+                if cache is not None:
+                    cache(presets)
+            else:
+                raise OSError("invalid preset response")
         except Exception as error:
-            self.app.state_manager.replace_state(
-                ErrorState(self.app, str(error), ERROR_HTTP_GET)
-            )
-            return
-
-        if success and presets:
-            self.app.state_manager.replace_state(PresetMenu(self.app, presets))
-            return
-        
-        if not self.app.flags & APP_FLAG_NON_FATAL_API:
             self.app.flags |= APP_FLAG_NON_FATAL_API
-            self.app.state_manager.replace_state(
-                ErrorState(self.app, "Unable to load presets", ERROR_UNKNOWN)
-            )
-            return
-            
-        self.app.state_manager.replace_state(PresetMenu(self.app, ["unable to load", "check wifi conn", "unable to load"]))
-        return
+            print("WARNING|preset_sync|{}".format(error))
+            try:
+                load_cache = getattr(self.app.storage, "read_preset_data", None)
+                presets = load_cache().get("presets", []) if load_cache else []
+            except Exception:
+                presets = []
+        self.app.state_manager.replace_state(PresetMenu(self.app, presets[:MAX_PRESETS]))
 
     def draw(self):
         self.app.display.draw_loading(

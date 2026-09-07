@@ -5,6 +5,9 @@ from states.home.MainMenuState import MainMenuCycleState
 from states.NotifyState import ErrorState, Notify
 from states.presets.PresetInteract import PresetInteract, SendingState
 from states.presets.PresetMenu import PresetMenu
+from config.config import (
+    APP_FLAG_NON_FATAL_STORAGE, BUTTON_PRESS, DIAL_EVENT,
+)
 
 
 RESULTS = []
@@ -34,6 +37,14 @@ class Storage:
         if self.fail:
             raise OSError("storage failure")
         return {"message": "saved"}
+
+    def newest_message(self):
+        if self.fail:
+            raise OSError("storage failure")
+        return {
+            "id": "saved", "sender": "ella", "text": "saved",
+            "utc": "2026-01-01T00:00:00Z",
+        }
 
     def write_display_data(self, data):
         return
@@ -76,16 +87,19 @@ def test_full_navigation():
     app.state_manager.update()
     main = app.state_manager.current_state()
     main.current_index = 1
-    main.handle_input(True, "button")
+    main.handle_input(True, BUTTON_PRESS)
     app.state_manager.update()
     preset = app.state_manager.current_state()
-    preset.handle_input(True, "button")
+    preset.handle_input(True, BUTTON_PRESS)
+    preset.handle_input(1, DIAL_EVENT)
+    preset.handle_input(True, BUTTON_PRESS)
     interaction = app.state_manager.current_state()
     if not isinstance(interaction, PresetInteract):
         raise RuntimeError("interaction state not reached")
-    interaction.handle_input(True, "button")
-    if not isinstance(app.state_manager.current_state(), LoadingMainMenuState):
-        raise RuntimeError("back did not reset to loading state")
+    interaction.handle_input(True, BUTTON_PRESS)
+    interaction.handle_input(True, BUTTON_PRESS)
+    if not isinstance(app.state_manager.current_state(), PresetMenu):
+        raise RuntimeError("back did not pop to preset list")
 
 
 def test_storage_failure():
@@ -93,8 +107,10 @@ def test_storage_failure():
     app.storage.fail = True
     app.state_manager.start(LoadingMainMenuState(app))
     app.state_manager.update()
-    if not isinstance(app.state_manager.current_state(), ErrorState):
-        raise RuntimeError("error state was overwritten")
+    if not isinstance(app.state_manager.current_state(), MainMenuCycleState):
+        raise RuntimeError("offline Home was not reached")
+    if not app.flags & APP_FLAG_NON_FATAL_STORAGE:
+        raise RuntimeError("storage warning flag was not set")
 
 
 def test_send_false():
@@ -122,14 +138,14 @@ def test_notify_reset():
     original.started = True
     notify = Notify(app, "ok", "done")
     app.state_manager.replace_state(notify)
-    notify.handle_input(True, "button")
+    notify.handle_input(True, BUTTON_PRESS)
     current = app.state_manager.current_state()
     if not isinstance(current, LoadingMainMenuState) or current is original or current.started:
         raise RuntimeError("reset did not create a fresh loader")
 
 
 check("Full menu/preset/back navigation", test_full_navigation)
-check("Loading storage failure recovery", test_storage_failure)
+check("Loading storage failure reaches offline Home", test_storage_failure)
 check("Sending false-result recovery", test_send_false)
 check("Sending exception recovery", test_send_exception)
 check("Notify fresh reset", test_notify_reset)
