@@ -35,6 +35,15 @@ config.PRESETS_JACK_URL = "http://diagnostic.invalid/presets"
 config.NO_PRESETS_RESP = "No presets"
 config.READ_ELLA_URL = "http://diagnostic.invalid/read"
 config.SEND_JACK_URL = "http://diagnostic.invalid/send"
+config.API_GET_TIMEOUT_S = 5
+config.API_POST_TIMEOUT_S = 30
+config.HTTP_SUCCESS_MIN = 200
+config.HTTP_SUCCESS_MAX_EXCLUSIVE = 300
+config.HTTP_SEND_SUCCESS_STATUS = 200
+config.DISPLAY_FILE = "display.json"
+config.PRESET_FILE = "preset.json"
+config.MESSAGE_STORAGE_KEY = "message"
+config.PRESETS_STORAGE_KEY = "presets"
 config_package.PRESETS_JACK_URL = config.PRESETS_JACK_URL
 config_package.NO_PRESETS_RESP = config.NO_PRESETS_RESP
 config_package.READ_ELLA_URL = config.READ_ELLA_URL
@@ -80,7 +89,7 @@ class Requests(types.ModuleType):
 
 requests = Requests()
 sys.modules["urequests"] = requests
-api_module = load_module("api_edge_test", "scripts/app/api.py")
+api_module = load_module("api_edge_test", "client/app/api.py")
 api = api_module.MessageApiClient()
 
 
@@ -121,7 +130,7 @@ def test_storage_round_trip():
     with tempfile.TemporaryDirectory() as directory:
         config.DISPLAY_FILE = os.path.join(directory, "display.json")
         config.PRESET_FILE = os.path.join(directory, "preset.json")
-        storage_module = load_module("storage_edge_test", "scripts/hardware_devices/storage.py")
+        storage_module = load_module("storage_edge_test", "client/hardware_devices/storage.py")
         storage = storage_module.Storage()
         storage.write_display_data("hello")
         assert storage.read_display_data() == {"message": "hello"}
@@ -133,15 +142,27 @@ rotary_module = types.ModuleType("libraries.rotary_irq_esp")
 rotary_module.RotaryIRQ = type("RotaryIRQ", (), {"RANGE_WRAP": 1})
 sys.modules["libraries"] = types.ModuleType("libraries")
 sys.modules["libraries.rotary_irq_esp"] = rotary_module
-config.INPUT_DEBOUNCE_MS = 150
+config.BUTTON_DEBOUNCE_MS = 150
 config.BUTTON_PRESS = 3
 config.RIGHT_DIAL = 1
 config.LEFT_DIAL = -1
 config.DIAL_EVENT = 4
+config.BUTTON_PIN = 25
+config.DIAL_CLK_PIN = 26
+config.DIAL_DT_PIN = 27
+config.WAKE_PIN = 33
+config.ENCODER_EVENT_DEBOUNCE_MS = 275
+config.ENCODER_INCREMENT = 1
+config.ENCODER_MAX_STEP_DELTA = 100
+config.ENCODER_MAX_VALUE = 1000
+config.ENCODER_MIN_STEP_DELTA = 2
+config.ENCODER_MIN_VALUE = 0
+config.ENCODER_RANGE_SIZE = 1001
+config.ENCODER_WRAP_THRESHOLD = 500
 machine = types.ModuleType("machine")
 machine.Pin = type("Pin", (), {"IN": 0, "PULL_UP": 1})
 sys.modules["machine"] = machine
-input_module = load_module("input_edge_test", "scripts/hardware_devices/input_device.py")
+input_module = load_module("input_edge_test", "client/hardware_devices/input_device.py")
 
 
 class Clock:
@@ -172,8 +193,8 @@ def dial_event(previous, current):
     dial.rotary_encoder = Encoder(current)
     dial.last_event_ms = 0
     dial.last_processed_encoder_value = previous
-    dial.minimum_turn = 6
-    dial.maximum_turn = 100
+    dial.minimum_step_delta = 6
+    dial.maximum_step_delta = 100
     return dial.event()
 
 

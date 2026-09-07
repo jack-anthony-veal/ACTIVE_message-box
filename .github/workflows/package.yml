@@ -11,10 +11,10 @@ hardware:
     version: "1.28.0"
 
   displays:
-    type: SH1106
+    type: ST7789V
     quantity: 2
-    resolution: "128x64"
-    interface: I2C
+    resolution: "240x320"
+    interface: SPI
 
   inputs:
     type: digital_rotary_encoder
@@ -30,22 +30,24 @@ network:
 
 software:
   language: MicroPython
-  source_directory: src
-  test_directory: tests
+  source_directory: src/client
+  test_directory: src/tests
   demo_directory: demo
 
 features:
   - message_exchange
   - rotary_encoder_navigation
-  - OLED_interface
+  - colour_LCD_interface
   - main_menu
   - messages
   - presets
   - settings
 
 configuration:
-  endpoint:
-    environment_variable: MESSAGE_BOX_API_URL
+  client_firmware:
+    canonical_file: src/client/config/config.py
+  host_token:
+    environment_variable: MESSAGE_BOX_TOKEN
     required: true
 
   secrets:
@@ -55,7 +57,8 @@ configuration:
 development:
   version_control: git
   testing: true
-  hardware_in_the_loop: true
+  local_tests: true
+  hardware_validation: manual
 
 security:
   credentials_in_repository: false

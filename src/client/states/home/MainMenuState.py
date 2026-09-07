@@ -1,21 +1,38 @@
-import math
-
-from config import BUTTON_PRESS, RIGHT_DIAL, LEFT_DIAL
-from config.config import MENU_Y_AXIS
-from states.NotifyState import ErrorState
+from assets.registry import ICONS
+from config.config import (
+    BUTTON_PRESS, HOME_PRESETS_INDEX, HOME_SETTINGS_INDEX, LEFT_DIAL,
+    RIGHT_DIAL, HOME_MESSAGE_INDEX
+)
 from states.presets.LoadingPresetsState import LoadingPresetsState
 from states.settings.settings_navigate import SettingsNav
+from states.message.message import MessageDisplay
 
 
 class MainMenuCycleState:
     def __init__(self, app, message_preview=None):
         self.app = app
-        self.options = ["message", "presets", "settings"]
+        self.message_record = message_preview if type(message_preview) is dict else None
+        preview_text = (
+            message_preview.get("text")
+            if type(message_preview) is dict
+            else message_preview
+        )
+        self.options = ["Message", "Presets", "Settings"]
         self.previews = [
-            message_preview,
-            "Open to view presets...",
-            "No settings yet",
+            preview_text,
+            "Open saved message presets",
+            "Device and network settings",
         ]
+        self.icons = (
+            ICONS["menu"]["messages"],
+            ICONS["menu"]["presets"],
+            ICONS["menu"]["settings"],
+        )
+        self.selected_icons = (
+            ICONS["menu"]["messages_selected"],
+            ICONS["menu"]["presets_selected"],
+            ICONS["menu"]["settings_selected"],
+        )
         self.running = False
         self.current_index = 0
         self.index_updated = True
@@ -29,61 +46,45 @@ class MainMenuCycleState:
         self.running = False
 
     def handle_input(self, event, event_type=None):
-        if event is None or event_type is None: return
-
+        if event is None or event_type is None:
+            return
         if event_type == BUTTON_PRESS:
-            if self.current_index == 1:
+            if self.current_index == HOME_MESSAGE_INDEX:
+                self.app.state_manager.push_state(
+                    MessageDisplay(self.app, self.message_record)
+                )
+            elif self.current_index == HOME_PRESETS_INDEX:
                 self.app.state_manager.push_state(LoadingPresetsState(self.app))
-                return
-            if self.current_index == 2:
+            elif self.current_index == HOME_SETTINGS_INDEX:
                 self.app.state_manager.push_state(SettingsNav(self.app))
-                return
-
-        elif event in (RIGHT_DIAL, LEFT_DIAL):
+            return
+        if event in (RIGHT_DIAL, LEFT_DIAL):
             self.move_selection(event)
 
     def update(self):
         return
 
     def draw(self):
-        if not self.index_updated: return
-        self.app.display.custom_message(
-            self.previews[self.current_index],
-            x_axis=0,
-            y_axis=8,
-            wrap=True,
-            fill_all=True,
-        )
-        self.show_menu_bar()
-        self.index_updated = False
-
-    def show_menu_bar(self):
-        try:
-            x_axis = (len(self.options[self.current_index] + ' > ') + 1) * 8
-            centre = 128 / 2
-            x_axis = centre - math.floor((x_axis / 2))
-            x_axis = math.floor(x_axis)
-
-        except Exception as IndexMathERR:
-            print(IndexMathERR)
-            self.app.state_manager.replace_state(state=ErrorState(self.app, str(str(IndexMathERR)), 31))
+        if not self.index_updated:
             return
-
-
-        try:
-            self.app.display.custom_message(
-            ' > ' + self.options[self.current_index],
-            x_axis=x_axis,
-            y_axis=MENU_Y_AXIS,
-            fill_start_line=MENU_Y_AXIS,
-            fill_x_axis=128,
-            fill_y_axis=8,
-            wrap=False,
+        display = self.app.display
+        display.begin_screen("Home", "Rotate")
+        for index, option in enumerate(self.options):
+            display.draw_menu_row(
+                index,
+                option,
+                selected=index == self.current_index,
+                subtitle=self.previews[index],
+                icon=self.icons[index],
+                selected_icon=self.selected_icons[index],
             )
-        except Exception as DisplayErr:
-            self.app.state_manager.replace_state(state=ErrorState(self.app, str(str(DisplayErr)), 21))
-            return
-
+        right = "Open"
+        display.draw_nav_bar(
+            left="Rotate", right=right,
+            left_icon=ICONS["action"]["scroll"],
+            right_icon=ICONS["navigation"]["select"],
+        )
+        self.index_updated = False
 
     def move_selection(self, direction):
         self.current_index = (self.current_index + direction) % len(self.options)

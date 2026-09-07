@@ -1,0 +1,10 @@
+name: Message Box boot and recovery
+version: 1
+author: Message Box
+steps:
+  - wait-serial: 'SCENARIO|startup|PASS'
+  - wait-serial: 'SCENARIO|partial_final_line|PASS'
+  - wait-serial: 'SCENARIO|offline_recovery|PASS'
+  - wait-serial: 'SCENARIO|local_log_ack_order|PASS'
+  - wait-serial: 'SCENARIO|failed_update_rollback|PASS'
+  - wait-serial: 'STARTUP|HOME_READY'

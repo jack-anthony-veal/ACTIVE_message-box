@@ -1,1 +1,1 @@
-from config.config import *
+"""Shared firmware configuration lives in config.config."""

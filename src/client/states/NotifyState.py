@@ -1,23 +1,18 @@
 import time
 import gc
 import network
-from config.config import *
-from libraries.utils.ascii import MESSAGE_SENT_BORDER_RUNS
-import math
+
+from assets.registry import ICONS
+from config.config import (
+    BUTTON_PRESS, CONTENT_TOP, ERROR_CODES, ERROR_DEVICE_MAX_EXCLUSIVE,
+    ERROR_DEVICE_MIN, ERROR_HTTP_MAX_EXCLUSIVE, ERROR_HTTP_MIN,
+    ERROR_SOFTWARE_MAX_EXCLUSIVE, ERROR_SOFTWARE_MIN, ERROR_UNKNOWN,
+    ERROR_WIFI, FATAL_ERROR_DISPLAY_MS, SCREEN_MARGIN, SCREEN_WIDTH,
+    STATE_TEXT_FALLBACK_OFFSET_Y,
+)
 
 def add_text_to_box(title, data):
-    data = str(data)[:13]
-    title = str(title)[:13]
-
-    title_len = len(title)
-    data_len = len(data)
-    title_left = (13 - title_len) // 2
-    data_left = (13 - data_len) // 2
-    title_: str = (' ' * title_left) + title + (' ' * (13 - title_len - title_left))
-    data_: str = (' ' * data_left) + data + (' ' * (13 - data_len - data_left))
-
-    del title_len, data_len
-    return title_, data_
+    return str(title), str(data)
 
 class Notify:
     def __init__(self, app, data, title):
@@ -44,7 +39,9 @@ class Notify:
     def draw(self):
         if self.displayed: return
         title_text, body_text = add_text_to_box(self.title, self.data)
-        self.app.display.show_error(MESSAGE_SENT_BORDER_RUNS, title_text, body_text)
+        self.app.display.show_error(
+            ICONS["state"]["success"], title_text, body_text
+        )
         self.displayed = True
 
     def handle_input(self, event, type):
@@ -57,12 +54,14 @@ class Notify:
 
 
 class ErrorState:
-    def __init__(self, app, data="", error_code=0, fatal=False, last_state=None):
+    def __init__(
+        self, app, data="", error_code=ERROR_UNKNOWN,
+        fatal=False, last_state=None,
+    ):
         self.app = app
         self.data = str(data)
         self.displayed = False
         self.fatal = fatal
-        self.safe_state = self.app.safe_state
         self.last_state = app.reset_state if last_state is None else last_state
         self.error_code = error_code
         self.error_codes = ERROR_CODES
@@ -72,22 +71,26 @@ class ErrorState:
         connected_ = network.WLAN(network.STA_IF).isconnected()
 
         if not connected_:
-            self.screen = WIFI_ERROR_RUNS
-            self.error_code = 40
+            self.screen = ICONS["state"]["wifi_error"]
+            self.error_code = ERROR_WIFI
             self.draw()
             del connected_
             return
 
         code = self.error_code
 
-        if code == 0:
-            screen = ANT_MAN_SCREEN
-        elif code in range(10,14):
-            screen = HTTP_ERROR_RUNS
-        elif code in range(20, 33):
-            screen = DEVICE_ERROR_RUNS
+        if code == ERROR_UNKNOWN:
+            screen = ICONS["state"]["generic_error"]
+        elif code in range(ERROR_HTTP_MIN, ERROR_HTTP_MAX_EXCLUSIVE):
+            screen = ICONS["state"]["http_error"]
+        elif code in range(ERROR_DEVICE_MIN, ERROR_DEVICE_MAX_EXCLUSIVE):
+            screen = ICONS["state"]["device_error"]
+        elif code in range(ERROR_SOFTWARE_MIN, ERROR_SOFTWARE_MAX_EXCLUSIVE):
+            screen = ICONS["state"]["software_error"]
+        elif code == ERROR_WIFI:
+            screen = ICONS["state"]["wifi_error"]
         else:
-            screen = SOFTWARE_ERROR_RUNS
+            screen = ICONS["state"]["generic_error"]
 
         self.screen = screen
 
@@ -127,12 +130,17 @@ class ErrorState:
                     self.app.state_manager.reset()
 
                 except Exception:
-                    from machine import Pin, deepsleep, reset
+                    from machine import reset
 
                     try:
-                        # TODO: Make screen nicer
-                        self.app.display.custom_message("Fatal Error... Resetting \n :'(", fill_all=True)
-                        time.sleep(5)
+                        self.app.display.begin_screen("Fatal error")
+                        self.app.display.draw_text_block(
+                            "Resetting the device",
+                            SCREEN_MARGIN,
+                            CONTENT_TOP + STATE_TEXT_FALLBACK_OFFSET_Y,
+                            SCREEN_WIDTH - SCREEN_MARGIN * 2,
+                        )
+                        time.sleep_ms(FATAL_ERROR_DISPLAY_MS)
 
                     except Exception:
                         reset()

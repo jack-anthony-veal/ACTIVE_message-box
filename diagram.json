@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "author": "Message Box",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-v1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ky-040",
+      "id": "encoder",
+      "top": -20,
+      "left": 310,
+      "attrs": { "label": "Message Box Encoder" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "button",
+      "top": 190,
+      "left": 325,
+      "attrs": { "label": "Select", "bounce": "0", "color": "blue" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "clk-test",
+      "top": 285,
+      "left": 270,
+      "attrs": { "label": "Automation CLK", "bounce": "0", "color": "black" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "dt-test",
+      "top": 285,
+      "left": 390,
+      "attrs": { "label": "Automation DT", "bounce": "0", "color": "black" }
+    }
+  ],
+  "connections": [
+    [ "esp:26", "encoder:CLK", "green", [] ],
+    [ "esp:27", "encoder:DT", "blue", [] ],
+    [ "esp:3V3", "encoder:VCC", "red", [] ],
+    [ "esp:GND.1", "encoder:GND", "black", [] ],
+    [ "esp:25", "button:1.l", "orange", [] ],
+    [ "button:2.l", "esp:GND.1", "black", [] ],
+    [ "esp:26", "clk-test:1.l", "green", [] ],
+    [ "clk-test:2.l", "esp:GND.1", "black", [] ],
+    [ "esp:27", "dt-test:1.l", "blue", [] ],
+    [ "dt-test:2.l", "esp:GND.1", "black", [] ]
+  ],
+  "dependencies": {}
+}

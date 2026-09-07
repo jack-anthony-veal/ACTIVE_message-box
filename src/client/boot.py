@@ -1,107 +1,61 @@
 import gc
-import sys
-import time
-import esp
-from machine import I2C
-import network
-import esp32
-from machine import Pin, reset
-from config.config import *
-from libraries import sh1106
-from libraries.rotary_irq_esp import RotaryIRQ
-from start_up.tests import *
-from hardware_devices.input_device import OnSwitch
 
-switch = OnSwitch()
-wake_pins = switch.wake_up_pins
-del switch
+from app.ota_boot import begin
 
-# Trigger level: WAKEUP_ALL_LOW wakes up if ANY pin in the tuple drops to LOW
-sys.path.append('config')
-print(str(get_reset_reason()))
-gc.collect()
 
+begin()
 
 try:
-    i2c_bus = I2C(
-        0,
-        scl=Pin(I2C_SCL_PIN),
-        sda=Pin(I2C_SDA_PIN),
-        freq=100000
-    )
+    from hardware_devices.input_device import OnSwitch
 
-    dial = RotaryIRQ(
-                pin_num_clk=18,
-                pin_num_dt=19,
-                incr=1,
-                range_mode=RotaryIRQ.RANGE_WRAP,
-                pull_up = True,
-                half_step=False,
-                reverse=True,
-    )
-
-    button = Pin(
-                23,
-                Pin.IN,
-                Pin.PULL_UP
-    )
-
-except Exception as FATALERR:
-    print(str(FATALERR))
-    time.sleep(3)
-    gc.collect()
-    reset()
-
-
-def test_cycle(button_, dial_, i2c_):
-    fetch_api_token()
-    time.sleep_ms(50)
-    repr(test_i2c_bus(i2c_, (I2C_HEX_1, I2C_HEX_2)))
-    time.sleep_ms(50)
-    repr(test_encoder_idle(dial_))
-    time.sleep_ms(50)
-    repr(test_button_idle(button_))
-    time.sleep_ms(50)
-    repr(test_free_storage())
-    time.sleep_ms(20)
-    repr(test_storage())
-    time.sleep_ms(20)
-
+    wake_pins = OnSwitch().wake_up_pins
+except Exception as error:
+    wake_pins = []
+    print("WARNING|wake_input|{}".format(error))
 
 
 def wifi_stats():
-    station = network.WLAN(network.STA_IF)
-    if station.isconnected():
-        return True
-    else: return False
+    import network
+
+    return network.WLAN(network.STA_IF).isconnected()
 
 
 def connect_wifi():
-    gc.collect()
-    esp.osdebug(None)
-    station = network.WLAN(network.STA_IF)  # Create a net status class
-    station.active(False)
-    time.sleep_ms(20)
-    station.active(True)
-    station.disconnect()
-    time.sleep_ms(20)
+    import network
+
+    from config.config import (
+        WIFI_BOOT_CONNECT_TIMEOUT_S, WIFI_PASSWORD, WIFI_SSID,
+    )
+    from libraries.utils.wifi import connect
 
     try:
-        station.connect(WIFI_SSID, WIFI_PASSWORD)
-    except Exception as error:
-        print(error)
-    timeout = 20
+        import esp
 
-    while not station.isconnected() and timeout > 0:
-        timeout -= 1
-        time.sleep_ms(500)
+        esp.osdebug(None)
+    except (ImportError, AttributeError):
+        pass
+    station = network.WLAN(network.STA_IF)
+    try:
+        connected = connect(
+            station, WIFI_SSID, WIFI_PASSWORD, WIFI_BOOT_CONNECT_TIMEOUT_S
+        )
+    except OSError as error:
+        print("WARNING|wifi_connect|{}".format(error))
+        return False
+    if connected:
+        print("WIFI|connected")
+    return connected
 
-    if station.isconnected():
-        print("connected")
-    else:
-        return
 
+try:
+    from start_up.tests import get_reset_reason
 
-#test_cycle(dial_=dial, button_=button, i2c_=i2c_bus)
-#connect_wifi()
+    print(str(get_reset_reason()))
+except Exception as error:
+    print("WARNING|reset_reason|{}".format(error))
 
+try:
+    connect_wifi()
+except Exception as error:
+    print("WARNING|wifi_boot|{}".format(error))
+gc.collect()

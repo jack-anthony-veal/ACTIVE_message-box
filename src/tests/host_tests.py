@@ -29,11 +29,6 @@ def install_micropython_stubs():
     micropython.const = lambda value: value
     sys.modules["micropython"] = micropython
 
-    framebuf = types.ModuleType("framebuf")
-    framebuf.MONO_VLSB = 0
-    framebuf.FrameBuffer = type("FrameBuffer", (), {"__init__": lambda self, *args, **kwargs: None})
-    sys.modules["framebuf"] = framebuf
-
     machine = types.ModuleType("machine")
 
     class Pin:
@@ -53,7 +48,7 @@ def install_micropython_stubs():
             pass
 
     machine.Pin = Pin
-    machine.I2C = type("I2C", (), {"__init__": lambda self, *args, **kwargs: None})
+    machine.SPI = type("SPI", (), {"__init__": lambda self, *args, **kwargs: None})
     machine.disable_irq = lambda: 0
     machine.enable_irq = lambda state: None
     sys.modules["machine"] = machine
@@ -67,18 +62,19 @@ def install_micropython_stubs():
 
 install_micropython_stubs()
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SCRIPTS = os.path.join(ROOT, "scripts")
+SCRIPTS = os.path.join(ROOT, "client")
 sys.path.insert(0, SCRIPTS)
 
 from app.StateNavigator import StateNavigator
-from states.LoadingMainMenuState import LoadingMainMenuState
-from states.LoadingPresetsState import LoadingPresetsState
-from states.MainMenuState import MainMenuCycleState
+from states.home.LoadingMainMenuState import LoadingMainMenuState
+from states.presets.LoadingPresetsState import LoadingPresetsState
+from states.home.MainMenuState import MainMenuCycleState
 from states.NotifyState import ErrorState, Notify, add_text_to_box
 import states.NotifyState as notify_state_module
-from states.PresetInteract import PresetInteract, SendingState
-from states.PresetMenu import PresetMenu
-from libraries.utils.text_tools import message_from_payload, wrap_text
+from states.presets.PresetInteract import PresetInteract, SendingState
+from states.presets.PresetMenu import PresetMenu
+from libraries.utils.text_layout import layout_text
+from libraries.utils.text_tools import message_from_payload
 
 notify_state_module.time.ticks_ms = lambda: 1000
 notify_state_module.time.ticks_diff = lambda new, old: new - old
@@ -91,11 +87,13 @@ class Display:
     def power_on(self):
         self.calls.append(("power_on",))
 
-    def custom_message(self, *args, **kwargs):
-        self.calls.append(("custom_message", args, kwargs))
-
     def show_error(self, *args, **kwargs):
         self.calls.append(("show_error", args, kwargs))
+
+    def __getattr__(self, name):
+        def record(*args, **kwargs):
+            self.calls.append((name, args, kwargs))
+        return record
 
 
 class Storage:
@@ -149,6 +147,7 @@ class App:
         self.state_manager = StateNavigator(self)
         self.reset_state = LoadingMainMenuState(self)
         self.safe_state = MainMenuCycleState(self, "safe")
+        self.flags = 0
 
 
 def test_state_manager():
@@ -160,9 +159,13 @@ def test_state_manager():
     preset = PresetMenu(app, ["one"])
     app.state_manager.push_state(preset)
     preset.handle_input(True, 3)
+    preset.handle_input(1, 4)
+    preset.handle_input(True, 3)
     assert isinstance(app.state_manager.current_state(), PresetInteract)
     app.state_manager.current_state().handle_input(True, 3)
-    assert isinstance(app.state_manager.current_state(), LoadingMainMenuState)
+    assert app.state_manager.current_state().controller.menu_open
+    app.state_manager.current_state().handle_input(True, 3)
+    assert isinstance(app.state_manager.current_state(), PresetMenu)
 
 
 def test_fresh_reset():
@@ -179,20 +182,20 @@ def test_fresh_reset():
     assert current.started is False
 
 
-def test_loading_storage_failure():
+def test_loading_storage_failure_is_non_fatal():
     app = App()
     app.storage.raise_read = True
     app.state_manager.start(LoadingMainMenuState(app))
     app.state_manager.update()
-    assert isinstance(app.state_manager.current_state(), ErrorState)
+    assert isinstance(app.state_manager.current_state(), MainMenuCycleState)
 
 
-def test_loading_presets_failure():
+def test_loading_presets_failure_is_non_fatal():
     app = App()
     app.message_api.preset_error = OSError("timeout")
     app.state_manager.start(LoadingPresetsState(app))
     app.state_manager.update()
-    assert isinstance(app.state_manager.current_state(), ErrorState)
+    assert isinstance(app.state_manager.current_state(), PresetMenu)
 
 
 def test_sending_success():
@@ -247,7 +250,7 @@ def test_preset_navigation():
 def test_text_tools():
     assert message_from_payload({"message": "hello"}) == "hello"
     assert message_from_payload(None) == "No new messages!"
-    assert wrap_text("123456789", width=4, max_lines=3) == ["1234", "5678", "9"]
+    assert layout_text("123456789", 32, lambda value: len(value) * 8, 3) == ["1234", "5678", "9"]
 
 
 def test_notification_box():
@@ -257,8 +260,8 @@ def test_notification_box():
 
 check("StateNavigator push/pop/replace", test_state_manager)
 check("StateNavigator reset creates fresh loader", test_fresh_reset)
-check("LoadingMainMenu storage failure remains ErrorState", test_loading_storage_failure)
-check("LoadingPresets API failure becomes ErrorState", test_loading_presets_failure)
+check("LoadingMainMenu storage failure reaches offline Home", test_loading_storage_failure_is_non_fatal)
+check("LoadingPresets API failure reaches cached menu", test_loading_presets_failure_is_non_fatal)
 check("Sending success becomes Notify", test_sending_success)
 check("Sending false result becomes ErrorState", test_sending_false_result)
 check("Sending exception becomes ErrorState", test_sending_exception)

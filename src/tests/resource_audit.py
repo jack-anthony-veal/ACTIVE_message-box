@@ -1,19 +1,6 @@
-"""Read-only/sequential ESP32 resource and hardware-load audit.
-
-Run with: mpremote connect auto run device_tests/resource_audit.py
-"""
-
 import gc
 import os
 import time
-
-# Current production config references three absent artwork constants.  Define
-# inert audit-only fallbacks in builtins so unrelated modules can still be
-# profiled without editing or copying production files onto the board.
-import builtins
-for _missing_art_name in ("MESSAGES_RUNS", "PRESETS_RUNS", "SETTINGS_RUNS"):
-    if not hasattr(builtins, _missing_art_name):
-        setattr(builtins, _missing_art_name, ())
 
 
 def ticks_us():
@@ -64,7 +51,8 @@ emit("INFO", "baseline_free_heap", gc.mem_free())
 
 
 def import_app_modules():
-    import states.BaseState
+    import hardware_devices.display_device
+    import states.home.MainMenuState
 
 
 measure("imports.application_and_states", import_app_modules)
@@ -72,22 +60,22 @@ measure("imports.application_and_states", import_app_modules)
 from app.StateNavigator import StateNavigator
 from app.api import MessageApiClient
 from hardware_devices.storage import Storage
-from libraries.utils.text_tools import message_from_payload, wrap_text
-from states.BaseState import BaseState
-from states.LoadingMainMenuState import LoadingMainMenuState
-from states.LoadingPresetsState import LoadingPresetsState
-from states.MainMenuState import MainMenuCycleState
+from libraries.utils.text_layout import layout_text
+from libraries.utils.text_tools import message_from_payload
+from states.home.LoadingMainMenuState import LoadingMainMenuState
+from states.home.MainMenuState import MainMenuCycleState
 from states.NotifyState import Notify, add_text_to_box
-from states.PresetInteract import PresetInteract, SendingState
-from states.PresetMenu import PresetMenu
+from states.presets.LoadingPresetsState import LoadingPresetsState
+from states.presets.PresetInteract import PresetInteract, SendingState
+from states.presets.PresetMenu import PresetMenu
 
 
 class NullDisplay:
     def power_on(self):
         return None
 
-    def custom_message(self, *args, **kwargs):
-        return None
+    def __getattr__(self, name):
+        return lambda *args, **kwargs: None
 
 
 class NullApi:
@@ -124,7 +112,6 @@ constructors = (
     ("StateNavigator", lambda: StateNavigator(app)),
     ("MessageApiClient", MessageApiClient),
     ("Storage", Storage),
-    ("BaseState", lambda: BaseState(app)),
     ("LoadingMainMenuState", lambda: LoadingMainMenuState(app)),
     ("LoadingPresetsState", lambda: LoadingPresetsState(app)),
     ("MainMenuCycleState", lambda: MainMenuCycleState(app, "preview")),
@@ -138,8 +125,8 @@ for name, constructor in constructors:
 
 measure("text.message_from_payload.dict", lambda: message_from_payload({"message": "hello"}), 200)
 measure("text.message_from_payload.string", lambda: message_from_payload("hello"), 200)
-measure("text.wrap.short", lambda: wrap_text("hello world", 16, 6), 200)
-measure("text.wrap.long", lambda: wrap_text("0123456789" * 30, 16, 6), 50)
+measure("text.layout.short", lambda: layout_text("hello world", 216, lambda value: len(value) * 8, 10), 200)
+measure("text.layout.long", lambda: layout_text("0123456789" * 30, 216, lambda value: len(value) * 8, 10), 50)
 measure("notify.add_text_to_box", lambda: add_text_to_box("title", "data"), 200)
 measure("storage.ensure_dict.string", lambda: Storage.ensure_dict("hello", "message"), 200)
 measure("storage.ensure_dict.json", lambda: Storage.ensure_dict('{"message":"hello"}', "message"), 200)
@@ -147,8 +134,8 @@ measure("storage.ensure_dict.json", lambda: Storage.ensure_dict('{"message":"hel
 
 def navigator_cycle():
     manager = StateNavigator(app)
-    one = BaseState(app)
-    two = BaseState(app)
+    one = MainMenuCycleState(app, "one")
+    two = MainMenuCycleState(app, "two")
     manager.start(one)
     manager.push_state(two)
     manager.pop_state()
@@ -179,15 +166,28 @@ measure("PresetMenu.input_and_draw", preset_cycle, 100)
 
 
 def hardware_checks():
-    from machine import I2C, Pin
+    from machine import SPI, Pin
+    from config.config import (
+        DISPLAY_SPI_BAUDRATE, DISPLAY_SPI_BUS, DISPLAY_SPI_PHASE,
+        DISPLAY_SPI_POLARITY,
+        BUTTON_PIN, DISPLAY_MOSI_PIN, DISPLAY_SCK_PIN,
+    )
 
-    bus = I2C(0, scl=Pin(22), sda=Pin(21), freq=100000)
-    devices = bus.scan()
-    emit("HARDWARE", "i2c_scan", devices)
+    bus = SPI(
+        DISPLAY_SPI_BUS,
+        baudrate=DISPLAY_SPI_BAUDRATE,
+        polarity=DISPLAY_SPI_POLARITY,
+        phase=DISPLAY_SPI_PHASE,
+        sck=Pin(DISPLAY_SCK_PIN),
+        mosi=Pin(DISPLAY_MOSI_PIN),
+    )
+    emit("HARDWARE", "st7789_spi", "SPI2 20MHz mode 0")
+    if hasattr(bus, "deinit"):
+        bus.deinit()
 
     start = ticks_us()
     for _ in range(1000):
-        Pin(23, Pin.IN, Pin.PULL_UP).value()
+        Pin(BUTTON_PIN, Pin.IN, Pin.PULL_UP).value()
     emit("HARDWARE", "button_pin_1000_reads_us", ticks_diff(ticks_us(), start))
 
     from hardware_devices.input_device import Button, Dial

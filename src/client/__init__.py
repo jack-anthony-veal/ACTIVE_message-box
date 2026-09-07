@@ -1,2 +1,1 @@
-from .boot import connect_wifi, wifi_stats
-from .main import main
+"""Message Box client firmware package."""

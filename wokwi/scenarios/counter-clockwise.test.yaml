@@ -1,0 +1,26 @@
+name: Message Box counter-clockwise movement
+version: 1
+author: Message Box
+steps:
+  - wait-serial: 'STARTUP|HOME_READY'
+  - delay: 400ms
+  - set-control:
+      part-id: dt-test
+      control: pressed
+      value: 1
+  - delay: 20ms
+  - set-control:
+      part-id: clk-test
+      control: pressed
+      value: 1
+  - delay: 20ms
+  - set-control:
+      part-id: dt-test
+      control: pressed
+      value: 0
+  - delay: 20ms
+  - set-control:
+      part-id: clk-test
+      control: pressed
+      value: 0
+  - wait-serial: 'INPUT|4|-1'

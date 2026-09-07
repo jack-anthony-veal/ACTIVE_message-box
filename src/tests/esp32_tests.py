@@ -1,10 +1,8 @@
 import gc
 import network
 import time
-from machine import I2C, Pin
-
 from app.api import MessageApiClient
-from hardware_devices.display_device import OledDisplay
+from hardware_devices.display_device import Display
 from hardware_devices.input_device import Button, Dial
 from hardware_devices.storage import Storage
 
@@ -27,18 +25,11 @@ def check_wifi():
     return "connected"
 
 
-def check_i2c():
-    bus = I2C(0, scl=Pin(22), sda=Pin(21), freq=100000)
-    devices = bus.scan()
-    if 0x3C not in devices:
-        raise RuntimeError("OLED address 0x3C missing: " + str(devices))
-    return devices
-
-
 def check_display():
-    display = OledDisplay()
+    display = Display()
     display.power_on()
-    display.custom_message("Diagnostics OK", fill_all=True, x_axis=0, y_axis=8, wrap=True)
+    display.begin_screen("Diagnostics", "ST7789")
+    display.draw_text_block("Diagnostics OK", 12, 76, 216)
     time.sleep_ms(250)
     return "draw completed"
 
@@ -95,8 +86,7 @@ def check_real_send():
 
 
 check("Wi-Fi connected", check_wifi)
-check("OLED present on I2C", check_i2c)
-check("OLED draw", check_display)
+check("ST7789 draw", check_display)
 check("Storage write/read/restore", check_storage_restore)
 check("Input hardware construction", check_inputs)
 check("Message endpoint", check_message_read)

@@ -1,174 +1,141 @@
-# Message-Box
+# Message Box
 
-An embedded messaging system built with two ESP32-WROOM devices, SH1106 128×64 OLED displays, rotary encoders, and a self-hosted FastAPI backend.
+Message Box is a two-device ESP32/MicroPython messaging system with a small
+FastAPI host. The production device uses a 240×320 ST7789V RGB565 LCD, a rotary
+encoder on GPIO26/GPIO27, and a button on GPIO25.
 
-## Server Site
-projectserver.org
+The ESP32 is the application and OTA target. The project does not target or
+deploy to a Raspberry Pi, and application OTA never flashes MicroPython or the
+ST7789 C-module firmware.
 
-## Repo Tree
+## Device configuration
+
+Credentials and device identity are local files ignored by Git. Copy both
+examples before deploying the client:
+
+```sh
+cp src/client/config/network.example.ini src/client/config/network.ini
+cp src/client/config/device.example.ini src/client/config/device.ini
 ```
 
-├── .github
-│   └── workflows
-│       └── package.yml
-├── .idea
-│   ├── inspectionProfiles
-│   │   └── profiles_settings.xml
-│   ├── .gitignore
-│   ├── message-box.iml
-│   ├── modules.xml
-│   └── vcs.xml
-├── demo
-│   ├── IMG_6451.mov
-│   └── IMG_6497.PNG
-├── src
-│   ├── client
-│   │   ├── app
-│   │   │   ├── __init__.py
-│   │   │   ├── api.py
-│   │   │   ├── app.py
-│   │   │   ├── exception_handler.py
-│   │   │   └── StateNavigator.py
-│   │   ├── config
-│   │   │   ├── __init__.py
-│   │   │   ├── config.py
-│   │   │   ├── keymap_layout.py
-│   │   │   └── network.ini
-│   │   ├── database
-│   │   │   ├── display.txt
-│   │   │   └── preset.txt
-│   │   ├── hardware_devices
-│   │   │   ├── __init__.py
-│   │   │   ├── display_device.py
-│   │   │   ├── dummy.py
-│   │   │   ├── input_device.py
-│   │   │   └── storage.py
-│   │   ├── libraries
-│   │   │   ├── utils
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── ascii.py
-│   │   │   │   ├── debug.py
-│   │   │   │   ├── menutools.py
-│   │   │   │   ├── text_tools.py
-│   │   │   │   ├── typing.py
-│   │   │   │   └── wifi_status.py
-│   │   │   ├── __init__.py
-│   │   │   ├── buffer_.py
-│   │   │   ├── config.py
-│   │   │   ├── rotary_irq_esp.py
-│   │   │   ├── rotary.py
-│   │   │   └── sh1106.py
-│   │   ├── logs
-│   │   │   └── errors.txt
-│   │   ├── start_up
-│   │   │   ├── __init__.py
-│   │   │   ├── result.py
-│   │   │   └── tests.py
-│   │   ├── states
-│   │   │   ├── home
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── LoadingMainMenuState.py
-│   │   │   │   ├── MainMenuState.py
-│   │   │   │   ├── MessageState.py
-│   │   │   │   └── PresetMenu.py
-│   │   │   ├── presets
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── LoadingPresetsState.py
-│   │   │   │   ├── PresetInteract.py
-│   │   │   │   └── PresetMenu.py
-│   │   │   ├── proc
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── base_display.py
-│   │   │   │   └── StateNavigator.py
-│   │   │   ├── settings
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── settings_navigate.py
-│   │   │   │   ├── wifi_settings.py
-│   │   │   │   └── WIFI.py
-│   │   │   ├── __init__.py
-│   │   │   ├── keyboard.py
-│   │   │   └── NotifyState.py
-│   │   ├── __init__.py
-│   │   ├── boot.py
-│   │   └── main.py
-│   └── host
-│       ├── __pycache__
-│       │   └── main.cpython-313.pyc
-│       ├── data
-│       │   ├── ella.txt
-│       │   ├── jack.txt
-│       │   └── presets.json
-│       ├── static
-│       │   └── index.html
-│       ├── index.html
-│       └── main.py
-├── tests
-│   ├── __pycache__
-│   │   ├── current_regression_tests.cpython-313.pyc
-│   │   ├── esp32_regression_tests.cpython-313.pyc
-│   │   ├── esp32_state_tests.cpython-313.pyc
-│   │   ├── esp32_tests.cpython-313.pyc
-│   │   ├── full_local_tests.cpython-313.pyc
-│   │   ├── host_tests.cpython-313.pyc
-│   │   ├── resource_audit.cpython-313.pyc
-│   │   └── service_edge_tests.cpython-313.pyc
-│   ├── current_regression_tests.py
-│   ├── esp32_regression_tests.py
-│   ├── esp32_state_tests.py
-│   ├── esp32_tests.py
-│   ├── full_local_tests.py
-│   ├── host_tests.py
-│   ├── resource_audit.py
-│   └── service_edge_tests.py
-└── README.md
+Set `ssid` and `pass` in `network.ini`. Set one shared token plus `owner`,
+`peer`, and `base_url` in `device.ini`. The second box swaps owner and peer.
+Never commit or print either local file.
+
+For the first application install over USB, first install the repository's
+documented MicroPython 1.28.0/ST7789 C-module firmware manually if it is not
+already present. With the two local INI files configured, upload the application
+tree without flashing firmware:
+
+```sh
+./tools/upload_usb.sh
 ```
 
-## Architecture
+The helper removes CPython caches from a temporary staging copy, uploads with
+`mpremote`, and resets the board. If an update ever leaves the application
+unusable and automatic rollback cannot run, repeat the USB application upload;
+do not erase `config/` or `database/`.
 
-`Message-Box A ⇄ FastAPI Server ⇄ Message-Box B`
+## Mailbox behavior
 
-Each ESP32 runs MicroPython and communicates with the backend over HTTP. The OLED provides the interface and the rotary encoder provides navigation and input.
+The host stores one JSON slot per sender. Each slot contains an ID, sender,
+text, and UTC timestamp. A newer send replaces the sender's previous slot.
 
-## Hardware
+- `POST /send/{sender}` replaces that sender's slot.
+- `GET /read/{sender}` is non-destructive.
+- `POST /ack/{sender}/{id}` clears only a slot with the matching ID.
+- `GET/POST /presets/{person}` and `PUT/DELETE /presets/{person}/{index}`
+  maintain zero to five presets.
 
-- 2× ESP32-WROOM
-- 2× SH1106 128×64 OLED
-- 2× rotary encoders
+The ESP32 appends a received slot to `database/messages.jsonl`, verifies the
+write, deduplicates by ID, and only then acknowledges it. An invalid partial
+final JSONL line is ignored and removed before the next append. The Messages
+screen opens the newest saved message and formats the server's UTC timestamp as
+GMT/BST UK time.
 
-## Software
+Normal screens start in content mode with their actions hidden. Press opens the
+action bar, rotation selects an action, and another press activates it. Keyboard
+and loading states are explicit exceptions. Message and preset detail text wrap
+by measured pixel width and scroll vertically without truncating stored text.
 
-- MicroPython 1.28.0
-- Python / FastAPI
-- HTTP
-- I²C
-- Automated tests
+## Run the host
 
-## Repository
+The host is platform-neutral: any machine or container capable of running
+Python and exposing an HTTP(S) endpoint can run it.
 
-- `src/` — firmware
-- `demo/` — demonstrations
-- `tests/` — tests
+```sh
+python -m venv .venv
+source .venv/bin/activate
+pip install -r src/host/requirements.txt
+export MESSAGE_BOX_TOKEN='the-same-long-random-token-as-device.ini'
+uvicorn main:app --app-dir src/host --host 0.0.0.0 --port 8000
+```
 
-## Features
+Use a service manager or container restart policy in production, terminate TLS
+at a suitable reverse proxy, and keep `MESSAGE_BOX_TOKEN` in the host's secret
+store. The host records no message history or database.
 
-- Two-device messaging
-- OLED interface
-- Rotary encoder navigation
-- Menus, presets and settings
-- Self-hosted backend
+## Startup health
 
-## Setup
+Before Home, the client checks the MicroPython version and ST7789 module,
+display construction and 240×320 geometry, GPIO conflicts, heap and free
+storage, temporary file operations, device configuration, log access, input
+construction, updater recovery, and Wi-Fi/server reachability. Hardware,
+storage, configuration, and updater failures block Home. Wi-Fi/server failure
+is a warning so cached messages, Settings, and reconnect controls remain usable.
 
-1. Flash MicroPython 1.28.0 to both ESP32s.
-2. Upload the firmware from `src/`.
-3. Configure the API endpoint locally.
-4. Start the FastAPI server.
-5. Connect both devices to the network.
+## Application OTA
 
-Keep credentials, Wi-Fi passwords, API keys, tokens and private endpoints out of the repository.
+Package the deployable `src/client` tree on a laptop:
 
-## Status
+```sh
+python tools/package_update.py 0.2.0
+```
 
-**Active prototype.**
+This publishes `src/host/updates/current/manifest.json` and its verified files.
+The host serves the manifest and files through authenticated `/update/*`
+routes and retains the newest 100 update results.
 
-This project combines embedded firmware, electronics, physical user interfaces, networking, backend development and testing.
+The ESP32 checks the manifest during normal startup. Read its bounded result log
+at `GET {base_url}/update/results` with the shared token in the `box-token`
+header.
+
+At boot, the ESP32 stages every file, checks free space, byte size, and SHA-256,
+copies one complete backup, then applies the app update and resets. It preserves
+`config/network.ini`, `config/device.ini`, `database/`, and the firmware image.
+A successful startup marks the version healthy. If that first health check does
+not complete—including when an updated `main.py` cannot import—a stable boot
+timer resets the device and the next boot rolls back. `boot.py`,
+`app/ota_boot.py`, `app/updater.py`, and the empty `app/__init__.py` are excluded
+from remote packages so this recovery path cannot be replaced by an application
+update. The previous backup remains until the next update.
+
+## Wokwi
+
+The root `wokwi.toml` uses the checked-in MicroPython 1.28.0/ST7789 firmware and
+opens RFC2217 port 4000. The diagram includes an ESP32, Wokwi-GUEST networking,
+the encoder GPIOs, and the GPIO25 button. See `wokwi/README.md` for upload and
+automation commands.
+
+Wokwi does not document a built-in ST7789 part. The harness injects a
+simulator-only display backend and validates serial/state behavior; it does not
+replace production display code or claim exact LCD visual validation.
+
+## Verification
+
+```sh
+python -m compileall -q src tools
+python src/tests/display_migration_tests.py
+python src/tests/full_local_tests.py
+python src/tests/host_tests.py
+python src/tests/host_api_tests.py
+python src/tests/service_edge_tests.py
+python src/tests/current_regression_tests.py
+python src/tests/finish_message_box_tests.py
+git diff --check
+./tools/run_wokwi_tests.sh
+```
+
+The `esp32_*` and resource-audit scripts are board-side checks. Physical LCD,
+encoder, and real OTA validation must only be recorded after observation on the
+connected hardware.

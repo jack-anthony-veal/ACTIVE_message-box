@@ -1,12 +1,6 @@
-from config.config import IF_MESSAGE_NONE_DISP
+from assets.registry import ICONS
+from config.config import APP_FLAG_NON_FATAL_API, APP_FLAG_NON_FATAL_STORAGE
 from states.home.MainMenuState import MainMenuCycleState
-from states.NotifyState import ErrorState
-
-_OTHER = 1 << 0
-_NON_FATAL_API = 1 << 1
-_NON_FATAL_WIFI= 1 << 2
-_NON_FATAL_HTTP= 1 << 3
-_NON_FATAL = 1 << 4
 
 
 class LoadingMainMenuState:
@@ -24,49 +18,53 @@ class LoadingMainMenuState:
         return
 
     def update(self):
-        if self.app.state_manager.current_state() is not self:
+        if self.started or self.app.state_manager.current_state() is not self:
             return
-
-        if self.started:
-            return
-
         self.started = True
-        message = None
+        newest = None
         try:
-            has_new_message, message = self.app.message_api.read_new_message()
+            has_new_message, payload = self.app.message_api.read_new_message()
             if has_new_message:
-                self.app.storage.write_display_data(message)
-            else:
-                try:
-                    message = self.app.storage.read_display_data().get("message")
-
-                except Exception as storage_error:
-                    if not self.app.flags & _NON_FATAL:
-                        self.app.flags |= _NON_FATAL
-                        self.app.state_manager.replace_state(state=ErrorState(self.app, str(storage_error), 22))
-                        message = None
-                        return
-
+                message = payload["message"]
+                append = getattr(self.app.storage, "append_message", None)
+                saved = (
+                    append(message)
+                    if append is not None
+                    else self.app.storage.write_display_data(payload)
+                )
+                if saved is not False:
+                    print("MESSAGE|saved|{}".format(message["id"]))
+                    acknowledge = getattr(
+                        self.app.message_api, "acknowledge_message", None
+                    )
+                    if acknowledge is not None and acknowledge(message["id"]):
+                        print("MESSAGE|acked|{}".format(message["id"]))
+                    elif acknowledge is not None:
+                        print("WARNING|message_ack_pending|{}".format(message["id"]))
+                    newest_method = getattr(self.app.storage, "newest_message", None)
+                    newest = newest_method() if newest_method is not None else message
+                else:
+                    print("WARNING|message_save|{}".format(message["id"]))
         except Exception as error:
-            print("Message loading error:", error)
-            if not self.app.flags & _NON_FATAL_API:
-                self.app.flags |= _NON_FATAL_API
-                self.app.state_manager.replace_state(state=ErrorState(self.app, str(error), 12))
-                message = None
-                return
+            self.app.flags |= APP_FLAG_NON_FATAL_API
+            print("WARNING|message_sync|{}".format(error))
 
-        if message is None:
-            message = IF_MESSAGE_NONE_DISP
+        if newest is None:
+            try:
+                newest_method = getattr(self.app.storage, "newest_message", None)
+                if newest_method is not None:
+                    newest = newest_method()
+                else:
+                    saved = self.app.storage.read_display_data()
+                    newest = saved.get("record", saved.get("message"))
+            except Exception as error:
+                self.app.flags |= APP_FLAG_NON_FATAL_STORAGE
+                print("WARNING|message_storage|{}".format(error))
 
-
-        self.app.state_manager.replace_state(MainMenuCycleState(self.app, message))
+        self.app.state_manager.replace_state(MainMenuCycleState(self.app, newest))
 
     def draw(self):
         self.app.display.power_on()
-        self.app.display.custom_message(
-            "Loading messages",
-            x_axis=0,
-            y_axis=8,
-            fill_all=True,
-            wrap=False,
+        self.app.display.draw_loading(
+            "Loading messages", ICONS["state"]["loading_message"]
         )
