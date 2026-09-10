@@ -506,7 +506,6 @@ class TestStates(unittest.TestCase):
         menu.handle_input(1, 4); self.assertEqual(menu.preset_data_select, "one")
         menu.handle_input(True, 3)
         self.assertTrue(menu.controller.menu_open)
-        menu.handle_input(1, 4)
         menu.handle_input(True, 3)
         self.assertIsInstance(app.state_manager.current_state(), PresetInteract)
 

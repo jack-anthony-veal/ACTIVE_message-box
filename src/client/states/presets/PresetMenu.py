@@ -8,8 +8,8 @@ from states.proc.base_display import menu_positions
 from states.proc.two_mode import TwoModeController
 
 
-_BACK = 0
-_OPEN = 1
+_OPEN = 0
+_BACK = 1
 
 
 class PresetMenu:
