@@ -159,11 +159,11 @@ def test_state_manager():
     preset = PresetMenu(app, ["one"])
     app.state_manager.push_state(preset)
     preset.handle_input(True, 3)
-    preset.handle_input(1, 4)
     preset.handle_input(True, 3)
     assert isinstance(app.state_manager.current_state(), PresetInteract)
     app.state_manager.current_state().handle_input(True, 3)
     assert app.state_manager.current_state().controller.menu_open
+    app.state_manager.current_state().handle_input(1, 4)
     app.state_manager.current_state().handle_input(True, 3)
     assert isinstance(app.state_manager.current_state(), PresetMenu)
 

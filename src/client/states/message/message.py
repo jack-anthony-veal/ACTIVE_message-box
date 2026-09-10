@@ -10,8 +10,8 @@ from states.presets.PresetInteract import SendingState
 from states.proc.two_mode import TwoModeController
 
 
-_BACK = 0
-_SEND = 1
+_SEND = 0
+_BACK = 1
 
 
 class MessageDisplay:

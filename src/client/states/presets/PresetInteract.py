@@ -8,8 +8,8 @@ from states.NotifyState import ErrorState, Notify
 from states.proc.two_mode import TwoModeController
 
 
-_BACK = 0
-_SEND = 1
+_SEND = 0
+_BACK = 1
 
 
 class PresetInteract:

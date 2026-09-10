@@ -326,7 +326,6 @@ class UiContractTests(unittest.TestCase):
         self.assertGreater(state.scroll_offset, 0)
         state.handle_input(True, 3)
         self.assertTrue(state.controller.menu_open)
-        state.handle_input(1, 4)
         state.handle_input(True, 3)
         self.assertIsInstance(app.state_manager.current_state(), Keyboard)
 
@@ -338,7 +337,6 @@ class UiContractTests(unittest.TestCase):
         app.state_manager.push_state(menu)
         menu.handle_input(True, 3)
         self.assertTrue(menu.controller.menu_open)
-        menu.handle_input(1, 4)
         menu.handle_input(True, 3)
         detail = app.state_manager.current_state()
         self.assertIsInstance(detail, PresetInteract)

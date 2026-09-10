@@ -91,12 +91,12 @@ def test_full_navigation():
     app.state_manager.update()
     preset = app.state_manager.current_state()
     preset.handle_input(True, BUTTON_PRESS)
-    preset.handle_input(1, DIAL_EVENT)
     preset.handle_input(True, BUTTON_PRESS)
     interaction = app.state_manager.current_state()
     if not isinstance(interaction, PresetInteract):
         raise RuntimeError("interaction state not reached")
     interaction.handle_input(True, BUTTON_PRESS)
+    interaction.handle_input(1, DIAL_EVENT)
     interaction.handle_input(True, BUTTON_PRESS)
     if not isinstance(app.state_manager.current_state(), PresetMenu):
         raise RuntimeError("back did not pop to preset list")
