@@ -32,7 +32,14 @@ tree without flashing firmware:
 ```
 
 The helper removes CPython caches from a temporary staging copy, uploads with
-`mpremote`, and resets the board. If an update ever leaves the application
+`mpremote`, and resets the board. When more than one serial device is present,
+select the ESP32 explicitly:
+
+```sh
+MESSAGE_BOX_PORT=/dev/ttyUSB0 ./tools/upload_usb.sh
+```
+
+If an update ever leaves the application
 unusable and automatic rollback cannot run, repeat the USB application upload;
 do not erase `config/` or `database/`.
 

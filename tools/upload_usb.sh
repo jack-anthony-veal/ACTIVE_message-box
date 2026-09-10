@@ -2,6 +2,7 @@
 set -euo pipefail
 
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+port="${MESSAGE_BOX_PORT:-auto}"
 staging="$(mktemp -d)"
 trap 'rm -rf "$staging"' EXIT
 
@@ -15,6 +16,6 @@ done
 
 cp -R src/client "$staging/client"
 find "$staging/client" -type d -name __pycache__ -prune -exec rm -rf {} +
-python -m mpremote connect auto fs cp -r "$staging/client"/* :
-python -m mpremote connect auto reset
+python -m mpremote connect "$port" fs cp -r "$staging/client"/* :
+python -m mpremote connect "$port" reset
 echo "Uploaded Message Box application over USB without flashing firmware"

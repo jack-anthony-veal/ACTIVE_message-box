@@ -525,3 +525,36 @@ Hardware validation still required:
 Remaining:
 - Install Wokwi CLI, set `WOKWI_CLI_TOKEN`, and run `./tools/run_wokwi_tests.sh`.
 - Re-run board startup and updater tests when the ESP32 serial port becomes visible.
+
+## Stage 16 — final physical LCD deployment
+
+Files changed:
+- `tools/upload_usb.sh`
+- `README.md`
+- `LCD_HARDWARE_TEST.md`
+- `DISPLAY_MIGRATION_LOG.md`
+
+Changes:
+- Added an optional `MESSAGE_BOX_PORT` selector to the USB upload helper and
+  documented its use for hosts with multiple serial devices.
+- Re-verified and installed the merged MicroPython 1.28.0/ST7789 firmware at
+  address `0x0`, then uploaded the complete Message Box client tree.
+
+Validation:
+- The CP2102 ESP32 was detected at `/dev/ttyUSB0`; MicroPython 1.28.0 and the
+  compiled `st7789` module were confirmed after flashing.
+- esptool verified the firmware write against the recorded image hash.
+- The full LCD diagnostic ran through colour, geometry, primitives, and wrapped
+  typography; the user physically confirmed the result worked correctly.
+- All ordered on-device startup checks passed, offline networking remained a
+  warning, and the application reached `STARTUP|HOME_READY`.
+- The seven documented host suites passed 110 tests/assertions. Compileall,
+  shell syntax, and `git diff --check` passed.
+
+Hardware validation still required:
+- Encoder rotation/button behaviour remains untested on this setup because no
+  encoder or button is attached.
+- Wi-Fi-backed message delivery requires real local credentials and server URL.
+
+Remaining:
+- Run the Wokwi scenarios when `wokwi-cli` and `WOKWI_CLI_TOKEN` are available.

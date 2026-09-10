@@ -8,7 +8,7 @@ Board probe:
 - Machine: `Generic ESP32 module with ESP32`
 - Free heap after corrected firmware boot: `165072` bytes
 - ST7789 import: passed, built-in module present
-- Prepared custom firmware: `src/client/firmware/micropython-1.28.0-esp32-st7789.bin`
+- Prepared custom firmware: `src/firmware/micropython-1.28.0-esp32-st7789.bin`
 - Prepared firmware SHA-256: `1b96d660658e9d4736c004a812f0d6113be39c0c3d7969c2eb9984ce9cadd570`
 
 The first user flash placed the merged image at `0x1000`, shifting its bootloader to `0x2000` and causing an `invalid header: 0xffffffff` boot loop. With explicit authorization, the validated merged image was written at its required `0x0` address and its hash was verified. The ESP32 filesystem was then emptied, 112 deployable client files were uploaded, and the normal application was started.
@@ -24,7 +24,7 @@ The first user flash placed the merged image at `0x1000`, shifting its bootloade
 - [x] full-screen border visible
 - [x] all four corners visible
 - [x] text renders
-- [ ] text wrapping correct — HOST PASS; DEVICE RAN; VISUAL CONFIRMATION PENDING
+- [x] text wrapping correct — USER CONFIRMED FULL DIAGNOSTIC DISPLAY
 - [ ] all 45 assets render — DEVICE PASS ALL 45; USER CONFIRMED REPEAT THROUGH 35/45 AND REQUESTED STOP
 - [x] asset colours correct — USER CONFIRMED VISIBLE REPEAT
 - [x] asset matte matches background — USER CONFIRMED VISIBLE REPEAT
@@ -45,3 +45,20 @@ Completed device-side sequence:
 5. Started the production `main.py`; one clean boot was observed and the disconnected network produced the expected API error path.
 
 The user physically confirmed pure red, green, blue, and white; black text on white; portrait orientation; full border; all four corner markers; correct top/bottom/left/right placement; and no clipping or mirroring. During the repeat asset gallery the user reported that everything was fine and asked to stop; the process was interrupted after asset 35/45. All 45 assets had already completed device-side rendering without exceptions in the earlier automated pass.
+
+## Final deployment confirmation — 2026-09-10
+
+- Re-detected the CP2102 board at `/dev/ttyUSB0`.
+- Confirmed the board initially had MicroPython 1.28.0 but lacked the compiled
+  `st7789` module.
+- Re-verified the 1,797,824-byte firmware image and its recorded SHA-256, then
+  flashed the merged image at `0x0`; esptool verified the written data.
+- Confirmed MicroPython 1.28.0 and `import st7789` after the flash.
+- Uploaded the complete client tree and verified its required directories plus
+  1,142,784 bytes of free filesystem space.
+- Ran the full LCD diagnostic through initialisation, primary colours,
+  orientation/offsets, primitives, and wrapped typography. The user reported
+  that it worked correctly.
+- Ran the normal application startup checks. Every required check passed,
+  offline Wi-Fi/server remained a warning, and the app reached
+  `STARTUP|HOME_READY` before being reset into standalone operation.
