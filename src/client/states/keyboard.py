@@ -139,20 +139,21 @@ class Keyboard:
         self.upper_case = not self.upper_case
         self.alphabet = ALPHABET_UPPER if self.upper_case else ALPHABET_LOWER
         self.alphabet_length = len(self.alphabet)
+        if "a" <= selected <= "z":
+            selected = selected.upper()
+        elif "A" <= selected <= "Z":
+            selected = selected.lower()
         try:
-            self.current = self.alphabet.index(selected.swapcase())
+            self.current = self.alphabet.index(selected)
         except ValueError:
-            try:
-                self.current = self.alphabet.index(selected)
-            except ValueError:
-                self.current = 0
+            self.current = 0
         self.dirty |= _DIRTY_KEYS
         print("KEYBOARD|case|{}".format("upper" if self.upper_case else "lower"))
 
     def _handle_button(self):
         character = self.alphabet[self.current]
         if character == "~":
-            del self.return_buffer[:]
+            self.return_buffer[:] = b""
             self.return_buffer.extend(self.get_text().encode("utf-8"))
             print("KEYBOARD|submit|{}".format(self.text_length))
             self.app.state_manager.replace_state(self.last_state)

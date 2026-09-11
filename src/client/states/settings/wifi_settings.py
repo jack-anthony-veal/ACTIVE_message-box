@@ -158,7 +158,7 @@ class WifiSettings:
         if callback is not None:
             callback(ssid, rssi, security)
         else:
-            del self.selected_ssid_buffer[:]
+            self.selected_ssid_buffer[:] = b""
             self.selected_ssid_buffer.extend(ssid.encode("utf-8"))
         return True
 

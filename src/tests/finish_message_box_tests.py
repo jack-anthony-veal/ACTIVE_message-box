@@ -131,6 +131,7 @@ from states.keyboard import Keyboard
 import states.keyboard as keyboard_module
 import libraries.utils.wifi as wifi_module
 import start_up.tests as startup_module
+import main as client_main
 
 keyboard_module.time = Clock
 wifi_module.time = Clock
@@ -302,6 +303,56 @@ class StorageTests(unittest.TestCase):
 
 
 class UiContractTests(unittest.TestCase):
+    def test_runtime_input_failure_becomes_recoverable_error_state(self):
+        class BrokenState(NullState):
+            def handle_input(self, event, event_type=None):
+                raise RuntimeError("simulated input failure")
+
+        class Input:
+            def __init__(self, event, event_type):
+                self._event = event
+                self.event_type = event_type
+
+            def event(self):
+                return self._event
+
+        app = FakeApp()
+        app.button = Input(True, 3)
+        app.dial = Input(None, 4)
+        app.state_manager.start(BrokenState())
+        with self.assertRaisesRegex(RuntimeError, "simulated input failure"):
+            client_main.run_iteration(app)
+
+        old_log = client_main.ERROR_LOG_FILE
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                path = os.path.join(directory, "errors.txt")
+                client_main.ERROR_LOG_FILE = path
+                client_main.recover_runtime_error(
+                    app, RuntimeError("simulated input failure")
+                )
+                self.assertIsInstance(
+                    app.state_manager.current_state(), client_main.ErrorState
+                )
+                self.assertIn("simulated input failure", Path(path).read_text())
+        finally:
+            client_main.ERROR_LOG_FILE = old_log
+
+    def test_client_avoids_unavailable_micropython_string_case_methods(self):
+        for relative_path in (
+            "states/message/message.py",
+            "states/keyboard.py",
+        ):
+            source = (CLIENT / relative_path).read_text(encoding="utf-8")
+            self.assertNotIn(".title(", source)
+            self.assertNotIn(".swapcase(", source)
+        keyboard_source = (CLIENT / "states/keyboard.py").read_text(encoding="utf-8")
+        wifi_source = (
+            CLIENT / "states/settings/wifi_settings.py"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("del self.return_buffer[:]", keyboard_source)
+        self.assertNotIn("del self.selected_ssid_buffer[:]", wifi_source)
+
     def test_controller_content_then_hidden_menu(self):
         controller = TwoModeController(2)
         self.assertFalse(controller.menu_open)
@@ -328,6 +379,16 @@ class UiContractTests(unittest.TestCase):
         self.assertTrue(state.controller.menu_open)
         state.handle_input(True, 3)
         self.assertIsInstance(app.state_manager.current_state(), Keyboard)
+
+    def test_empty_messages_press_returns_home_immediately(self):
+        app = FakeApp(None)
+        home = MainMenuCycleState(app, None)
+        app.state_manager.start(home)
+        home.handle_input(True, 3)
+        state = app.state_manager.current_state()
+        self.assertIsInstance(state, MessageDisplay)
+        state.handle_input(True, 3)
+        self.assertIs(app.state_manager.current_state(), home)
 
     def test_preset_list_and_detail_use_two_modes_and_full_wrap(self):
         app = FakeApp()

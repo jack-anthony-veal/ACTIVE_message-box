@@ -54,6 +54,14 @@ class MessageDisplay:
         body_height = CONTENT_BOTTOM - (CONTENT_TOP + LINE_HEIGHT + SPACE_SM)
         return max(0, len(self._lines()) * LINE_HEIGHT - body_height)
 
+    def _is_empty(self):
+        record = self._record()
+        return (
+            not record.get("sender")
+            and not record.get("id")
+            and record.get("text") == "No saved messages"
+        )
+
     def handle_input(self, event, event_type=None):
         if event is None or event_type is None:
             return
@@ -68,7 +76,14 @@ class MessageDisplay:
             return
         if event_type != BUTTON_PRESS:
             return
-        selected = self.controller.activate()
+        if not self.controller.menu_open and self._is_empty():
+            self.app.state_manager.pop_state()
+            return
+        if not self.controller.menu_open:
+            self.controller.show_menu(_SEND)
+            selected = None
+        else:
+            selected = self.controller.activate()
         self.needs_draw = True
         if selected is None:
             print("MENU|message|open")
@@ -90,7 +105,7 @@ class MessageDisplay:
         record = self._record()
         sender = record.get("sender") or "Unknown"
         display = self.app.display
-        display.begin_screen("From " + str(sender).title())
+        display.begin_screen("From " + str(sender))
         timestamp = format_uk_time(record.get("utc", ""))
         if timestamp:
             display.text(
